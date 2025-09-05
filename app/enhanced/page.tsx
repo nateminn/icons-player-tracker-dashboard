@@ -207,7 +207,7 @@ export default function EnhancedDashboard() {
             
             {/* Market Filter */}
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Select Markets:</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-white">Select Markets:</label>
               <div className="flex gap-2 mb-3">
                 <button
                   onClick={() => setSelectedMarkets(marketsList)}
@@ -217,7 +217,7 @@ export default function EnhancedDashboard() {
                 </button>
                 <button
                   onClick={() => setSelectedMarkets([])}
-                  className="px-3 py-1 text-xs bg-gray-50 dark:bg-gray-7000 text-white rounded hover:bg-gray-600"
+                  className="px-3 py-1 text-xs bg-gray-500 dark:bg-gray-700 text-white rounded hover:bg-gray-600 dark:hover:bg-gray-600"
                 >
                   Unselect All
                 </button>
@@ -235,7 +235,7 @@ export default function EnhancedDashboard() {
                         }
                       }}
                     />
-                    <label className="text-sm">{market}</label>
+                    <label className="text-sm text-gray-700 dark:text-white">{market}</label>
                   </div>
                 ))}
               </div>
@@ -243,7 +243,7 @@ export default function EnhancedDashboard() {
 
             {/* Status Filter */}
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">Player Status:</label>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-white">Player Status:</label>
               <div className="space-y-2">
                 {statusOptions.map(status => (
                   <div key={status} className="flex items-center space-x-2">
@@ -257,7 +257,7 @@ export default function EnhancedDashboard() {
                         }
                       }}
                     />
-                    <label className="text-sm">{status}</label>
+                    <label className="text-sm text-gray-700 dark:text-white">{status}</label>
                   </div>
                 ))}
               </div>
@@ -265,7 +265,7 @@ export default function EnhancedDashboard() {
 
             {/* Volume Range Slider */}
             <div className="mb-6">
-              <label className="block text-sm font-medium mb-2">
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-white">
                 Search Volume Range: {volumeRange[0].toLocaleString()} - {volumeRange[1].toLocaleString()}
               </label>
               <Slider
@@ -298,7 +298,7 @@ export default function EnhancedDashboard() {
                 <h1 className="text-3xl font-bold text-black dark:text-white">
                   Icons Player Demand Tracker
                 </h1>
-                <p className="text-gray-600 dark:text-gray-300 dark:text-gray-300 mt-1">
+                <p className="text-gray-600 dark:text-gray-300 mt-1">
                   Global Search Demand Analysis • {format(dataMonth, 'MMMM yyyy')}
                 </p>
               </div>
