@@ -407,7 +407,7 @@ export default function EnhancedDashboard() {
                   </CardHeader>
                   <CardContent>
                     {isMounted && (
-                      // @ts-expect-error
+                      // @ts-expect-error - Plotly type definitions conflict
                       <Plot
                         data={[{
                           type: 'bar' as const,
@@ -450,6 +450,7 @@ export default function EnhancedDashboard() {
                   </CardHeader>
                   <CardContent>
                     {isMounted && (
+                      // @ts-expect-error - Plotly type definitions conflict
                       <Plot
                         data={[{
                           type: 'pie' as const,
@@ -483,6 +484,7 @@ export default function EnhancedDashboard() {
                 </CardHeader>
                 <CardContent>
                   {isMounted && (
+                    // @ts-expect-error - Plotly type definitions conflict
                     <Plot
                       data={[
                         // Unsigned players (Red dots)
@@ -1020,6 +1022,7 @@ export default function EnhancedDashboard() {
                     }
 
                     return isMounted && topPlayers.length > 0 && (
+                      // @ts-expect-error - Plotly type definitions conflict
                       <Plot
                         data={[{
                           type: 'heatmap' as const,
@@ -1202,7 +1205,8 @@ export default function EnhancedDashboard() {
                             }));
 
                             return isMounted && (
-                              <Plot
+                              // @ts-expect-error - Plotly type definitions conflict
+                      <Plot
                                 data={plotData}
                                 layout={{
                                   height: 400,
@@ -1245,7 +1249,8 @@ export default function EnhancedDashboard() {
                             }));
 
                             return isMounted && (
-                              <Plot
+                              // @ts-expect-error - Plotly type definitions conflict
+                      <Plot
                                 data={plotData}
                                 layout={{
                                   height: 400,
