@@ -407,7 +407,7 @@ export default function EnhancedDashboard() {
                   </CardHeader>
                   <CardContent>
                     {isMounted && (
-                      {/* @ts-ignore */}
+                      // @ts-expect-error
                       <Plot
                         data={[{
                           type: 'bar' as const,
