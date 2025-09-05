@@ -262,10 +262,10 @@ export class DataProcessor {
     }
     
     // Trend component (0-35 points)
-    const trendScore = Math.max(Math.min(trend * 0.7, 35), -15);
+    const trendScore = Math.max(Math.min(Number(trend) * 0.7, 35), -15);
     
     // Keyword diversity component (0-25 points)
-    const diversityScore = Math.min(keywordCount * 2, 25);
+    const diversityScore = Math.min(Number(keywordCount) * 2, 25);
     
     // Calculate total (can be negative for declining trends)
     const totalScore = volumeScore + trendScore + diversityScore;
