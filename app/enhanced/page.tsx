@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { 
   Menu, X, Download, Settings, RefreshCcw, TrendingUp, 
-  TrendingDown, Users, Globe, Target, BarChart3 
+  TrendingDown, Users, Globe, Target, BarChart3, Moon, Sun 
 } from "lucide-react";
 import { comprehensivePlayerData, marketsList, EnhancedPlayerData } from '@/lib/enhanced-sample-data';
 
@@ -66,6 +66,7 @@ export default function EnhancedDashboard() {
   const [selectedPlayerForAnalytics, setSelectedPlayerForAnalytics] = useState<string>("");
   const [playerNameSearch, setPlayerNameSearch] = useState<string>("");
   const [teamSearch, setTeamSearch] = useState<string>("");
+  const [darkMode, setDarkMode] = useState<boolean>(false);
 
   const statusOptions = ["Signed", "Unsigned"];
 
@@ -170,12 +171,12 @@ export default function EnhancedDashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className={`flex h-screen ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
       {/* Streamlit-style Sidebar */}
-      <div className={`${sidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 overflow-hidden bg-white shadow-lg`}>
+      <div className={`${sidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 overflow-hidden ${darkMode ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
         <div className="p-6 h-full overflow-y-auto">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-800">📊 Dashboard Controls</h2>
+            <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>📊 Dashboard Controls</h2>
             <Button
               variant="ghost"
               size="sm"
@@ -283,7 +284,7 @@ export default function EnhancedDashboard() {
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
         {/* Header */}
-        <div className="bg-white shadow-sm border-b p-6">
+        <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} shadow-sm border-b p-6`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Button
@@ -294,16 +295,24 @@ export default function EnhancedDashboard() {
                 <Menu className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-black">
+                <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-black'}`}>
                   Icons Player Demand Tracker
                 </h1>
-                <p className="text-gray-600 mt-1">
+                <p className={`${darkMode ? 'text-gray-300' : 'text-gray-600'} mt-1`}>
                   Global Search Demand Analysis • {format(dataMonth, 'MMMM yyyy')}
                 </p>
               </div>
             </div>
             
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setDarkMode(!darkMode)}
+                className="p-2"
+              >
+                {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
               <Button variant="outline">
                 <Download className="h-4 w-4 mr-2" />
                 Export CSV
@@ -315,7 +324,7 @@ export default function EnhancedDashboard() {
           </div>
         </div>
 
-        <div className="p-6">
+        <div className={`p-6 ${darkMode ? 'bg-gray-900' : ''}`}>
           {/* Enhanced KPI Cards - Compact Style */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3">
             <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white h-20">
