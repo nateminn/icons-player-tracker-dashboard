@@ -355,8 +355,8 @@ export class DataProcessor {
   getProcessingStats(data: Record<string, string | number>[]) {
     const totalPlayers = new Set(data.map(item => item.player)).size;
     const totalMarkets = new Set(data.map(item => item.market)).size;
-    const totalVolume = data.reduce((sum, item) => sum + item.totalVolume, 0);
-    const avgOpportunityScore = data.reduce((sum, item) => sum + item.opportunityScore, 0) / data.length;
+    const totalVolume = data.reduce((sum, item) => sum + Number(item.totalVolume), 0);
+    const avgOpportunityScore = data.reduce((sum, item) => sum + Number(item.opportunityScore), 0) / data.length;
     
     return {
       totalPlayers,
@@ -364,7 +364,7 @@ export class DataProcessor {
       totalVolume,
       avgOpportunityScore: avgOpportunityScore.toFixed(2),
       topPlayers: data
-        .sort((a, b) => b.totalVolume - a.totalVolume)
+        .sort((a, b) => Number(b.totalVolume) - Number(a.totalVolume))
         .slice(0, 5)
         .map(item => ({ name: item.player, volume: item.totalVolume }))
     };
