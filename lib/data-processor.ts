@@ -116,7 +116,7 @@ export class DataProcessor {
         header: true,
         complete: (results) => {
           // Filter out empty rows and validate data
-          const validData = results.data.filter((row: SEMrushRow) => 
+          const validData = (results.data as SEMrushRow[]).filter((row: SEMrushRow) => 
             row.Keyword && 
             row['Avg. monthly searches'] && 
             row.Keyword.trim().length > 0
@@ -257,8 +257,8 @@ export class DataProcessor {
     
     // Volume component (0-40 points) - logarithmic scale
     let volumeScore = 0;
-    if (totalVolume > 0) {
-      volumeScore = Math.min(Math.log10(totalVolume) * 8, 40);
+    if (Number(totalVolume) > 0) {
+      volumeScore = Math.min(Math.log10(Number(totalVolume)) * 8, 40);
     }
     
     // Trend component (0-35 points)

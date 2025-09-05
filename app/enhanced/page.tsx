@@ -450,7 +450,6 @@ export default function EnhancedDashboard() {
                   </CardHeader>
                   <CardContent>
                     {isMounted && (
-                      // @ts-expect-error - Plotly type definitions conflict
                       <Plot
                         data={[{
                           type: 'pie' as const,
