@@ -171,7 +171,7 @@ export default function EnhancedDashboard() {
   };
 
   return (
-    <div className={`flex h-screen bg-gray-50 dark:bg-gray-700 dark:bg-gray-900 ${darkMode ? 'dark' : ''}`}>
+    <div className={`flex h-screen bg-gray-50 dark:bg-gray-900 ${darkMode ? 'dark' : ''}`}>
       {/* Streamlit-style Sidebar */}
       <div className={`${sidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 overflow-hidden bg-white dark:bg-gray-800 shadow-lg`}>
         <div className="p-6 h-full overflow-y-auto">
@@ -324,7 +324,7 @@ export default function EnhancedDashboard() {
           </div>
         </div>
 
-        <div className="p-6 bg-gray-50 dark:bg-gray-700 dark:bg-gray-900">
+        <div className="p-6 bg-gray-50 dark:bg-gray-900">
           {/* Enhanced KPI Cards - Compact Style */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3">
             <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white h-20">
