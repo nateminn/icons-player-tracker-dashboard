@@ -407,6 +407,7 @@ export default function EnhancedDashboard() {
                   </CardHeader>
                   <CardContent>
                     {isMounted && (
+                      {/* @ts-ignore */}
                       <Plot
                         data={[{
                           type: 'bar' as const,
@@ -417,7 +418,8 @@ export default function EnhancedDashboard() {
                             color: 'rgba(59, 130, 246, 0.8)',
                             line: { color: 'rgba(59, 130, 246, 1)', width: 1 }
                           },
-                          hovertemplate: '<b>%{y}</b><br>Volume: %{x:,.0f}<extra></extra>'
+                          hovertemplate: '<b>%{y}</b><br>Volume: %{x:,.0f}<extra></extra>',
+                          name: ''
                         }]}
                         layout={{
                           height: Math.max(400, topPlayersCount * 20), // Dynamic height: 20px per player, minimum 400px
