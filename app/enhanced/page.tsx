@@ -587,7 +587,7 @@ export default function EnhancedDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle>📊 Player Database</CardTitle>
-                  <p className="text-gray-600 dark:text-gray-300 dark:text-gray-300">Complete player tracking database with search and analytics</p>
+                  <p className="text-gray-600 dark:text-gray-300">Complete player tracking database with search and analytics</p>
                 </CardHeader>
                 <CardContent>
                   {/* Search and Controls */}
@@ -685,7 +685,7 @@ export default function EnhancedDashboard() {
                             </TableCell>
                             <TableCell className="font-mono">
                               {player.status === 'Unsigned' ? (
-                                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
                                   {player.opportunity_score.toFixed(0)}
                                 </Badge>
                               ) : '-'}
@@ -697,7 +697,7 @@ export default function EnhancedDashboard() {
                   </div>
                   
                   {tableFilteredData.length === 0 && tableSearchTerm && (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400 dark:text-gray-400">
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                       <p className="text-lg">No players found matching &ldquo;{tableSearchTerm}&rdquo;</p>
                       <p className="text-sm mt-2">Try searching by name, team, country, or position</p>
                     </div>
@@ -712,7 +712,7 @@ export default function EnhancedDashboard() {
                 <Card>
                   <CardHeader>
                     <CardTitle>👤 Individual Player Analytics</CardTitle>
-                    <p className="text-gray-600 dark:text-gray-300 dark:text-gray-300">Detailed breakdown and insights for a specific player</p>
+                    <p className="text-gray-600 dark:text-gray-300">Detailed breakdown and insights for a specific player</p>
                   </CardHeader>
                   <CardContent>
                     <div className="mb-6 space-y-4">
@@ -759,7 +759,7 @@ export default function EnhancedDashboard() {
                             return searchResults.map(player => (
                               <div
                                 key={player.id}
-                                className={`p-3 border-b cursor-pointer hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-700 ${selectedPlayerForAnalytics === player.name ? 'bg-blue-50 border-blue-200' : ''}`}
+                                className={`p-3 border-b cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 ${selectedPlayerForAnalytics === player.name ? 'bg-blue-50 dark:bg-blue-900 border-blue-200 dark:border-blue-700' : ''}`}
                                 onClick={() => {
                                   setSelectedPlayerForAnalytics(player.name);
                                   setPlayerNameSearch('');
@@ -780,7 +780,7 @@ export default function EnhancedDashboard() {
                       )}
                       
                       {selectedPlayerForAnalytics && !(playerNameSearch || teamSearch) && (
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-700">
                           <span className="text-sm font-medium">Selected:</span>
                           <span className="text-sm">{selectedPlayerForAnalytics}</span>
                           <Button
@@ -802,7 +802,7 @@ export default function EnhancedDashboard() {
                       return (
                         <div className="space-y-6">
                           {/* Player Header */}
-                          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
+                          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900 dark:to-purple-900 rounded-lg p-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div>
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{selectedPlayer.name}</h2>
@@ -824,7 +824,7 @@ export default function EnhancedDashboard() {
                                 {selectedPlayer.status === 'Unsigned' && (
                                   <div className="flex items-center justify-between">
                                     <span className="text-sm font-medium">Opportunity Score:</span>
-                                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                    <Badge variant="secondary" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300">
                                       {selectedPlayer.opportunity_score.toFixed(0)}/100
                                     </Badge>
                                   </div>
@@ -931,7 +931,7 @@ export default function EnhancedDashboard() {
                                   {/* Market Performance Ranking */}
                                   <h4 className="font-semibold mb-3">Market Performance Insights</h4>
                                   <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
+                                    <div className="flex justify-between items-center p-2 bg-blue-50 dark:bg-blue-900 rounded">
                                       <span>Primary Market:</span>
                                       <Badge variant="secondary">{selectedPlayer.market}</Badge>
                                     </div>
@@ -950,7 +950,7 @@ export default function EnhancedDashboard() {
                                       </span>
                                     </div>
                                     {selectedPlayer.status === 'Unsigned' && (
-                                      <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
+                                      <div className="flex justify-between items-center p-2 bg-yellow-50 dark:bg-yellow-900 rounded">
                                         <span>Signing Priority:</span>
                                         <Badge variant={selectedPlayer.opportunity_score > 75 ? 'destructive' : selectedPlayer.opportunity_score > 60 ? 'secondary' : 'outline'}>
                                           {selectedPlayer.opportunity_score > 75 ? 'High' : selectedPlayer.opportunity_score > 60 ? 'Medium' : 'Low'}
@@ -968,7 +968,7 @@ export default function EnhancedDashboard() {
 
                     {!selectedPlayerForAnalytics && (
                       <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                        <Users className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                        <Users className="h-16 w-16 mx-auto mb-4 text-gray-300 dark:text-gray-400" />
                         <h3 className="text-xl font-semibold mb-2">Select a Player</h3>
                         <p>Choose a player from the dropdown above to see detailed analytics</p>
                       </div>
@@ -1102,8 +1102,8 @@ export default function EnhancedDashboard() {
                                 searchResults.map(player => (
                                   <div
                                     key={player.id}
-                                    className={`px-3 py-2 cursor-pointer hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-700 flex items-center justify-between ${
-                                      selectedComparisonPlayers.includes(player.name) ? 'bg-blue-50' : ''
+                                    className={`px-3 py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between ${
+                                      selectedComparisonPlayers.includes(player.name) ? 'bg-blue-50 dark:bg-blue-900' : ''
                                     } ${
                                       !selectedComparisonPlayers.includes(player.name) && selectedComparisonPlayers.length >= 5
                                         ? 'opacity-50 cursor-not-allowed'
@@ -1281,7 +1281,7 @@ export default function EnhancedDashboard() {
 
                     {selectedComparisonPlayers.length < 2 && (
                       <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                        <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                        <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-300 dark:text-gray-400" />
                         <h3 className="text-xl font-semibold mb-2">Select Players to Compare</h3>
                         <p>Choose at least 2 players to see the comparison charts</p>
                       </div>
@@ -1302,30 +1302,30 @@ export default function EnhancedDashboard() {
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                      <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
                         <div className="text-center">
                           <div className="text-2xl font-bold text-blue-600">50%</div>
-                          <div className="text-sm text-blue-800 font-medium">Total Volume</div>
+                          <div className="text-sm text-blue-800 dark:text-blue-300 font-medium">Total Volume</div>
                           <div className="text-xs text-gray-600 dark:text-gray-300">Base interest level</div>
                         </div>
                       </div>
-                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                      <div className="bg-green-50 dark:bg-green-900 p-4 rounded-lg border border-green-200 dark:border-green-700">
                         <div className="text-center">
                           <div className="text-2xl font-bold text-green-600">30%</div>
-                          <div className="text-sm text-green-800 font-medium">Growth Trend</div>
+                          <div className="text-sm text-green-800 dark:text-green-300 font-medium">Growth Trend</div>
                           <div className="text-xs text-gray-600 dark:text-gray-300">Momentum indicator</div>
                         </div>
                       </div>
-                      <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                      <div className="bg-purple-50 dark:bg-purple-900 p-4 rounded-lg border border-purple-200 dark:border-purple-700">
                         <div className="text-center">
                           <div className="text-2xl font-bold text-purple-600">20%</div>
-                          <div className="text-sm text-purple-800 font-medium">Market Reach</div>
+                          <div className="text-sm text-purple-800 dark:text-purple-300 font-medium">Market Reach</div>
                           <div className="text-xs text-gray-600 dark:text-gray-300">Number of global markets</div>
                         </div>
                       </div>
                     </div>
                     <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg space-y-2">
-                      <p className="text-sm text-gray-700">
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
                         <strong>Formula:</strong> Opportunity Score = (Volume × 0.5) + (Trend × 0.3) + (Markets × 0.2)
                         <br />
                         <strong>Note:</strong> Only unsigned players receive opportunity scores. Signed players show 0.
@@ -1374,7 +1374,7 @@ export default function EnhancedDashboard() {
                             .sort((a, b) => b.opportunity_score - a.opportunity_score)
                             .slice(0, 15)
                             .map((player, index) => (
-                              <TableRow key={player.id} className={index < 3 ? 'bg-green-50' : ''}>
+                              <TableRow key={player.id} className={index < 3 ? 'bg-green-50 dark:bg-green-900' : ''}>
                                 <TableCell>
                                   <div className={`text-center font-bold ${index < 3 ? 'text-green-600' : 'text-gray-600 dark:text-gray-300'}`}>
                                     #{index + 1}
