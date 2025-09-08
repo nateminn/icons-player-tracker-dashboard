@@ -24,7 +24,6 @@ const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
 interface PlayerData {
   id: number;
   name: string;
-  status: string;
   total_volume: number;
   player_volume: number;
   merch_volume: number;
@@ -52,7 +51,6 @@ export default function EnhancedDashboard() {
   const [players, setPlayers] = useState<PlayerData[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>(["United Kingdom", "United States", "Germany", "Spain"]);
-  const [selectedStatus, setSelectedStatus] = useState<string[]>(["Signed", "Unsigned"]);
   const [volumeRange, setVolumeRange] = useState<number[]>([0, 1000000]);
   const [dataMonth, setDataMonth] = useState(new Date());
   const [topPlayersCount, setTopPlayersCount] = useState<number>(10);
@@ -67,7 +65,6 @@ export default function EnhancedDashboard() {
   const [playerNameSearch, setPlayerNameSearch] = useState<string>("");
   const [teamSearch, setTeamSearch] = useState<string>("");
 
-  const statusOptions = ["Signed", "Unsigned"];
 
   useEffect(() => {
     // Set mounted state for hydration
@@ -94,7 +91,6 @@ export default function EnhancedDashboard() {
   // Filter data based on selections
   const filteredData = players.filter(player => 
     selectedMarkets.includes(player.market) &&
-    selectedStatus.includes(player.status) &&
     player.total_volume >= volumeRange[0] &&
     player.total_volume <= volumeRange[1]
   );
@@ -126,7 +122,6 @@ export default function EnhancedDashboard() {
   // Calculate KPIs
   const totalVolume = filteredData.reduce((sum, p) => sum + p.total_volume, 0);
   const avgVolumePerPlayer = filteredData.length > 0 ? totalVolume / filteredData.length : 0;
-  const unsignedCount = filteredData.filter(p => p.status === 'Unsigned').length;
   const avgTrend = filteredData.length > 0 ? filteredData.reduce((sum, p) => sum + p.trend_percent, 0) / filteredData.length : 0;
   
   // Top market calculation
@@ -151,9 +146,6 @@ export default function EnhancedDashboard() {
     volume
   }));
 
-  // Separate data by status for proper legend
-  const unsignedPlayers = filteredData.filter(p => p.status === 'Unsigned');
-  const signedPlayers = filteredData.filter(p => p.status === 'Signed');
 
   // Function to determine if a player should have a text label (isolated enough)
   const shouldShowLabel = (player: EnhancedPlayerData, allPlayers: EnhancedPlayerData[]) => {
@@ -240,27 +232,6 @@ export default function EnhancedDashboard() {
               </div>
             </div>
 
-            {/* Status Filter */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2 text-gray-700">Player Status:</label>
-              <div className="space-y-2">
-                {statusOptions.map(status => (
-                  <div key={status} className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={selectedStatus.includes(status)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedStatus([...selectedStatus, status]);
-                        } else {
-                          setSelectedStatus(selectedStatus.filter(s => s !== status));
-                        }
-                      }}
-                    />
-                    <label className="text-sm text-gray-700">{status}</label>
-                  </div>
-                ))}
-              </div>
-            </div>
 
             {/* Volume Range Slider */}
             <div className="mb-6">
@@ -478,7 +449,7 @@ export default function EnhancedDashboard() {
                 <CardHeader>
                   <CardTitle>Player Popularity vs Growth Trend</CardTitle>
                   <p className="text-sm text-gray-600">
-                    🔴 Red = Unsigned Players • 🟢 Green = Signed Players • Dotted line shows zero growth
+                    Dotted line shows zero growth
                   </p>
                 </CardHeader>
                 <CardContent>
@@ -486,35 +457,20 @@ export default function EnhancedDashboard() {
                     // @ts-expect-error - Plotly type definitions conflict
                     <Plot
                       data={[
-                        // Unsigned players (Red dots)
+                        // All players
                         {
                           type: 'scatter' as const,
                           mode: 'markers' as const,
-                          name: 'Unsigned',
-                          x: unsignedPlayers.map(p => p.total_volume),
-                          y: unsignedPlayers.map(p => p.trend_percent),
-                          text: unsignedPlayers.map(p => p.name),
+                          name: 'Players',
+                          x: filteredData.map(p => p.total_volume),
+                          y: filteredData.map(p => p.trend_percent),
+                          text: filteredData.map(p => p.name),
                           marker: {
-                            color: '#ef4444',
-                            size: unsignedPlayers.map(p => Math.max(8, Math.sqrt(p.total_volume) / 50)),
-                            line: { color: '#dc2626', width: 1 }
+                            color: '#3b82f6',
+                            size: filteredData.map(p => Math.max(8, Math.sqrt(p.total_volume) / 50)),
+                            line: { color: '#1d4ed8', width: 1 }
                           },
-                          hovertemplate: '<b>%{text}</b><br>Volume: %{x:,.0f}<br>Trend: %{y:.1f}%<br><i>Status: Unsigned</i><extra></extra>'
-                        },
-                        // Signed players (Green dots)
-                        {
-                          type: 'scatter' as const,
-                          mode: 'markers' as const,
-                          name: 'Signed',
-                          x: signedPlayers.map(p => p.total_volume),
-                          y: signedPlayers.map(p => p.trend_percent),
-                          text: signedPlayers.map(p => p.name),
-                          marker: {
-                            color: '#22c55e',
-                            size: signedPlayers.map(p => Math.max(8, Math.sqrt(p.total_volume) / 50)),
-                            line: { color: '#16a34a', width: 1 }
-                          },
-                          hovertemplate: '<b>%{text}</b><br>Volume: %{x:,.0f}<br>Trend: %{y:.1f}%<br><i>Status: Signed</i><extra></extra>'
+                          hovertemplate: '<b>%{text}</b><br>Volume: %{x:,.0f}<br>Trend: %{y:.1f}%<extra></extra>'
                         },
                         // Text labels for isolated points
                         {
@@ -634,7 +590,6 @@ export default function EnhancedDashboard() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Player</TableHead>
-                          <TableHead>Status</TableHead>
                           <TableHead>Position</TableHead>
                           <TableHead>Age</TableHead>
                           <TableHead>Team</TableHead>
@@ -656,13 +611,6 @@ export default function EnhancedDashboard() {
                               </div>
                             </TableCell>
                             <TableCell>
-                              <Badge 
-                                variant={player.status === 'Signed' ? 'default' : player.status === 'Unsigned' ? 'destructive' : 'secondary'}
-                              >
-                                {player.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
                               <Badge variant="outline">{player.position}</Badge>
                             </TableCell>
                             <TableCell>{player.age}</TableCell>
@@ -675,11 +623,9 @@ export default function EnhancedDashboard() {
                               {player.trend_percent >= 0 ? '+' : ''}{player.trend_percent.toFixed(1)}%
                             </TableCell>
                             <TableCell className="font-mono">
-                              {player.status === 'Unsigned' ? (
-                                <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                                  {player.opportunity_score.toFixed(0)}
-                                </Badge>
-                              ) : '-'}
+                              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                {player.opportunity_score.toFixed(0)}
+                              </Badge>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -759,10 +705,7 @@ export default function EnhancedDashboard() {
                               >
                                 <div className="font-medium">{player.name}</div>
                                 <div className="text-sm text-gray-600">
-                                  {player.current_team} • {player.position} • {(player.total_volume / 1000).toFixed(0)}K searches •
-                                  <Badge variant={player.status === 'Signed' ? 'default' : player.status === 'Unsigned' ? 'destructive' : 'secondary'} className="ml-1">
-                                    {player.status}
-                                  </Badge>
+                                  {player.current_team} • {player.position} • {(player.total_volume / 1000).toFixed(0)}K searches
                                 </div>
                               </div>
                             ));
@@ -807,19 +750,11 @@ export default function EnhancedDashboard() {
                               </div>
                               <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium">Contract Status:</span>
-                                  <Badge variant={selectedPlayer.status === 'Signed' ? 'default' : selectedPlayer.status === 'Unsigned' ? 'destructive' : 'secondary'}>
-                                    {selectedPlayer.status}
+                                  <span className="text-sm font-medium">Opportunity Score:</span>
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                    {selectedPlayer.opportunity_score.toFixed(0)}/100
                                   </Badge>
                                 </div>
-                                {selectedPlayer.status === 'Unsigned' && (
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium">Opportunity Score:</span>
-                                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                                      {selectedPlayer.opportunity_score.toFixed(0)}/100
-                                    </Badge>
-                                  </div>
-                                )}
                                 <div className="flex items-center justify-between">
                                   <span className="text-sm font-medium">Market Coverage:</span>
                                   <span className="text-sm font-bold">{selectedPlayer.market_count} markets</span>
@@ -940,14 +875,6 @@ export default function EnhancedDashboard() {
                                         <span className="text-gray-500"> in {selectedPlayer.position}</span>
                                       </span>
                                     </div>
-                                    {selectedPlayer.status === 'Unsigned' && (
-                                      <div className="flex justify-between items-center p-2 bg-yellow-50 rounded">
-                                        <span>Signing Priority:</span>
-                                        <Badge variant={selectedPlayer.opportunity_score > 75 ? 'destructive' : selectedPlayer.opportunity_score > 60 ? 'secondary' : 'outline'}>
-                                          {selectedPlayer.opportunity_score > 75 ? 'High' : selectedPlayer.opportunity_score > 60 ? 'Medium' : 'Low'}
-                                        </Badge>
-                                      </div>
-                                    )}
                                   </div>
                                 </div>
                               </div>
@@ -1319,7 +1246,7 @@ export default function EnhancedDashboard() {
                       <p className="text-sm text-gray-700">
                         <strong>Formula:</strong> Opportunity Score = (Volume × 0.5) + (Trend × 0.3) + (Markets × 0.2)
                         <br />
-                        <strong>Note:</strong> Only unsigned players receive opportunity scores. Signed players show 0.
+                        <strong>Note:</strong> All players receive opportunity scores based on their market performance.
                       </p>
                       <div className="text-xs text-gray-600 space-y-2">
                         <p>
@@ -1361,7 +1288,6 @@ export default function EnhancedDashboard() {
                         </TableHeader>
                         <TableBody>
                           {filteredData
-                            .filter(p => p.status === 'Unsigned')
                             .sort((a, b) => b.opportunity_score - a.opportunity_score)
                             .slice(0, 15)
                             .map((player, index) => (
