@@ -17,6 +17,7 @@ import {
   TrendingDown, Users, Globe, Target, BarChart3 
 } from "lucide-react";
 import { comprehensivePlayerData, marketsList, EnhancedPlayerData } from '@/lib/enhanced-sample-data';
+import { dataFetcher } from '@/lib/data-fetcher';
 
 // Dynamic import for Plotly to avoid SSR issues
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
@@ -64,6 +65,11 @@ export default function EnhancedDashboard() {
   const [selectedPlayerForAnalytics, setSelectedPlayerForAnalytics] = useState<string>("");
   const [playerNameSearch, setPlayerNameSearch] = useState<string>("");
   const [teamSearch, setTeamSearch] = useState<string>("");
+  
+  // DataForSEO integration state
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
+  const [dataSource, setDataSource] = useState<"sample" | "dataforseo">("sample");
+  const [apiConnectionStatus, setApiConnectionStatus] = useState<"unknown" | "connected" | "error">("unknown");
 
 
   useEffect(() => {
@@ -74,7 +80,60 @@ export default function EnhancedDashboard() {
     // Set initial volume range based on data
     const volumes = comprehensivePlayerData.map(p => p.total_volume);
     setVolumeRange([Math.min(...volumes), Math.max(...volumes)]);
+    
+    // Test API connection on load
+    testApiConnection();
   }, []);
+
+  // Test DataForSEO API connection
+  const testApiConnection = async () => {
+    try {
+      const isConnected = await dataFetcher.testConnection();
+      setApiConnectionStatus(isConnected ? "connected" : "error");
+    } catch (error) {
+      console.error("API connection test failed:", error);
+      setApiConnectionStatus("error");
+    }
+  };
+
+  // Fetch data from DataForSEO
+  const fetchDataFromAPI = async () => {
+    setIsLoadingData(true);
+    try {
+      // Define the players we want to fetch data for
+      const targetPlayers = [
+        "Lionel Messi",
+        "Cristiano Ronaldo", 
+        "Kylian Mbappe",
+        "Erling Haaland",
+        "Jude Bellingham"
+      ];
+      
+      const freshData = await dataFetcher.fetchPlayerData(targetPlayers, selectedMarkets);
+      setPlayers(freshData);
+      setDataSource("dataforseo");
+      
+      // Update volume range based on new data
+      const volumes = freshData.map(p => p.total_volume);
+      setVolumeRange([Math.min(...volumes), Math.max(...volumes)]);
+      
+    } catch (error) {
+      console.error("Error fetching data from API:", error);
+      alert("Failed to fetch data from DataForSEO. Using sample data instead.");
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  // Load sample data
+  const loadSampleData = () => {
+    setPlayers(comprehensivePlayerData);
+    setDataSource("sample");
+    
+    // Reset volume range
+    const volumes = comprehensivePlayerData.map(p => p.total_volume);
+    setVolumeRange([Math.min(...volumes), Math.max(...volumes)]);
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -181,16 +240,86 @@ export default function EnhancedDashboard() {
           {/* Data Source Section */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold mb-3 text-gray-700">Data Source</h3>
+            
+            {/* API Connection Status */}
+            <div className="mb-3 p-2 rounded-md bg-gray-50">
+              <div className="flex items-center gap-2">
+                <div className={`h-2 w-2 rounded-full ${
+                  apiConnectionStatus === "connected" ? "bg-green-500" : 
+                  apiConnectionStatus === "error" ? "bg-red-500" : "bg-yellow-500"
+                }`} />
+                <span className="text-xs text-gray-600">
+                  DataForSEO API: {
+                    apiConnectionStatus === "connected" ? "Connected" :
+                    apiConnectionStatus === "error" ? "Error" : "Testing..."
+                  }
+                </span>
+              </div>
+            </div>
+
+            {/* Current Data Source */}
+            <div className="mb-3 p-2 rounded-md border">
+              <div className="text-xs text-gray-500 mb-1">Current Source:</div>
+              <div className="flex items-center gap-2">
+                <Badge variant={dataSource === "dataforseo" ? "default" : "secondary"}>
+                  {dataSource === "dataforseo" ? "📊 DataForSEO API" : "🎮 Sample Data"}
+                </Badge>
+                <span className="text-xs text-gray-500">
+                  ({players.length} players)
+                </span>
+              </div>
+            </div>
+            
             <div className="space-y-3">
-              <Button className="w-full" variant="default">
-                <RefreshCcw className="h-4 w-4 mr-2" />
-                Generate Demo Data
+              <Button 
+                className="w-full" 
+                variant={dataSource === "dataforseo" ? "default" : "outline"}
+                onClick={fetchDataFromAPI}
+                disabled={isLoadingData || apiConnectionStatus === "error"}
+              >
+                {isLoadingData ? (
+                  <>
+                    <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
+                    Fetching API Data...
+                  </>
+                ) : (
+                  <>
+                    <Globe className="h-4 w-4 mr-2" />
+                    Fetch from DataForSEO
+                  </>
+                )}
               </Button>
-              <Button className="w-full" variant="outline">
+              
+              <Button 
+                className="w-full" 
+                variant={dataSource === "sample" ? "default" : "outline"}
+                onClick={loadSampleData}
+                disabled={isLoadingData}
+              >
+                <RefreshCcw className="h-4 w-4 mr-2" />
+                Load Sample Data
+              </Button>
+              
+              <Button 
+                className="w-full" 
+                variant="outline" 
+                onClick={testApiConnection}
+                disabled={isLoadingData}
+              >
                 <Settings className="h-4 w-4 mr-2" />
-                Connect Google Sheets
+                Test API Connection
               </Button>
             </div>
+
+            {/* API Usage Warning */}
+            {apiConnectionStatus === "connected" && (
+              <div className="mt-3 p-2 rounded-md bg-yellow-50 border border-yellow-200">
+                <div className="text-xs text-yellow-700">
+                  ⚠️ Using DataForSEO ${process.env.DATAFORSEO_USE_SANDBOX === 'true' ? 'Sandbox' : 'Live API'}.
+                  {process.env.DATAFORSEO_USE_SANDBOX === 'true' ? ' Free sandbox data.' : ' Live requests cost credits.'}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="border-t pt-6">
