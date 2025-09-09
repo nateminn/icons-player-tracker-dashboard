@@ -42,7 +42,7 @@ interface PlayerData {
   opportunity_score: number;
   market_count: number;
   market: string;
-  markets?: MarketData[]; // Optional for backward compatibility
+  markets: MarketData[]; // Required to match EnhancedPlayerData
   age: number;
   position: string;
   current_team: string;
