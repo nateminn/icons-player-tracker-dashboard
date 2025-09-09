@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { comprehensivePlayerData, marketsList, EnhancedPlayerData } from '@/lib/enhanced-sample-data';
 import { dataFetcher } from '@/lib/data-fetcher';
+import { generateFinalPlayerData, FINAL_PLAYER_NAMES } from '@/lib/final-player-data';
 
 // Dynamic import for Plotly to avoid SSR issues
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
@@ -76,9 +77,12 @@ export default function EnhancedDashboard() {
     // Set mounted state for hydration
     setIsMounted(true);
     
-    setPlayers(comprehensivePlayerData);
+    // Load the final player data instead of old comprehensive data
+    const finalData = generateFinalPlayerData();
+    setPlayers(finalData);
+    
     // Set initial volume range based on data
-    const volumes = comprehensivePlayerData.map(p => p.total_volume);
+    const volumes = finalData.map(p => p.total_volume);
     setVolumeRange([Math.min(...volumes), Math.max(...volumes)]);
     
     // Test API connection on load
@@ -100,16 +104,21 @@ export default function EnhancedDashboard() {
   const fetchDataFromAPI = async () => {
     setIsLoadingData(true);
     try {
-      // Define the players we want to fetch data for
-      const targetPlayers = [
-        "Lionel Messi",
-        "Cristiano Ronaldo", 
-        "Kylian Mbappe",
-        "Erling Haaland",
-        "Jude Bellingham"
+      // Use a subset of the most popular players from the final list for API testing
+      const popularPlayers = [
+        "Jude Bellingham",
+        "Bukayo Saka", 
+        "Cole Palmer",
+        "Phil Foden",
+        "Martin Odegaard",
+        "Pedri",
+        "Jamal Musiala",
+        "Vini Jr.",
+        "Rafael Leão",
+        "Florian Wirtz"
       ];
       
-      const freshData = await dataFetcher.fetchPlayerData(targetPlayers, selectedMarkets);
+      const freshData = await dataFetcher.fetchPlayerData(popularPlayers, selectedMarkets);
       setPlayers(freshData);
       setDataSource("dataforseo");
       
@@ -127,11 +136,12 @@ export default function EnhancedDashboard() {
 
   // Load sample data
   const loadSampleData = () => {
-    setPlayers(comprehensivePlayerData);
+    const finalData = generateFinalPlayerData();
+    setPlayers(finalData);
     setDataSource("sample");
     
     // Reset volume range
-    const volumes = comprehensivePlayerData.map(p => p.total_volume);
+    const volumes = finalData.map(p => p.total_volume);
     setVolumeRange([Math.min(...volumes), Math.max(...volumes)]);
   };
 

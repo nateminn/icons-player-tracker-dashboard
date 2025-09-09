@@ -1,5 +1,6 @@
 // Data fetcher that integrates DataForSEO API with dashboard
 import { EnhancedPlayerData } from './enhanced-sample-data';
+import { FINAL_PLAYER_METADATA, FINAL_PLAYER_NAMES } from './final-player-data';
 
 interface PlayerKeywordMapping {
   name: string;
@@ -7,52 +8,108 @@ interface PlayerKeywordMapping {
   primaryKeyword: string;
 }
 
-// Define player keyword mappings
+// Define player keyword mappings for the final player list
 const PLAYER_KEYWORD_MAPPINGS: PlayerKeywordMapping[] = [
-  {
-    name: "Lionel Messi",
-    primaryKeyword: "messi",
-    keywords: [
-      "messi", "lionel messi", "messi goals", "messi highlights", 
-      "messi jersey", "messi shirt", "messi soccer", "messi football",
-      "messi transfer", "messi stats", "buy messi jersey"
-    ]
-  },
-  {
-    name: "Cristiano Ronaldo",
-    primaryKeyword: "ronaldo",
-    keywords: [
-      "ronaldo", "cristiano ronaldo", "ronaldo goals", "ronaldo highlights",
-      "ronaldo jersey", "ronaldo shirt", "ronaldo soccer", "ronaldo football",
-      "cr7", "cr7 jersey", "buy ronaldo jersey"
-    ]
-  },
-  {
-    name: "Kylian Mbappe",
-    primaryKeyword: "mbappe",
-    keywords: [
-      "mbappe", "kylian mbappe", "mbappe goals", "mbappe highlights",
-      "mbappe jersey", "mbappe shirt", "mbappe soccer", "mbappe transfer",
-      "mbappe real madrid", "buy mbappe jersey"
-    ]
-  },
-  {
-    name: "Erling Haaland",
-    primaryKeyword: "haaland",
-    keywords: [
-      "haaland", "erling haaland", "haaland goals", "haaland highlights",
-      "haaland jersey", "haaland shirt", "haaland manchester city",
-      "haaland soccer", "buy haaland jersey"
-    ]
-  },
+  // Popular current players
   {
     name: "Jude Bellingham",
     primaryKeyword: "bellingham",
-    keywords: [
-      "bellingham", "jude bellingham", "bellingham goals", "bellingham highlights",
-      "bellingham jersey", "bellingham real madrid", "bellingham england",
-      "buy bellingham jersey"
-    ]
+    keywords: ["bellingham", "jude bellingham", "bellingham goals", "bellingham highlights", "bellingham jersey", "bellingham real madrid", "buy bellingham jersey"]
+  },
+  {
+    name: "Bukayo Saka",
+    primaryKeyword: "saka",
+    keywords: ["saka", "bukayo saka", "saka goals", "saka highlights", "saka jersey", "saka arsenal", "buy saka jersey"]
+  },
+  {
+    name: "Cole Palmer",
+    primaryKeyword: "palmer",
+    keywords: ["cole palmer", "palmer chelsea", "palmer goals", "palmer highlights", "palmer jersey", "buy palmer jersey"]
+  },
+  {
+    name: "Phil Foden",
+    primaryKeyword: "foden",
+    keywords: ["foden", "phil foden", "foden goals", "foden highlights", "foden jersey", "foden manchester city", "buy foden jersey"]
+  },
+  {
+    name: "Martin Odegaard",
+    primaryKeyword: "odegaard",
+    keywords: ["odegaard", "martin odegaard", "odegaard goals", "odegaard highlights", "odegaard jersey", "odegaard arsenal", "buy odegaard jersey"]
+  },
+  {
+    name: "Pedri",
+    primaryKeyword: "pedri",
+    keywords: ["pedri", "pedri goals", "pedri highlights", "pedri jersey", "pedri barcelona", "buy pedri jersey"]
+  },
+  {
+    name: "Jamal Musiala",
+    primaryKeyword: "musiala",
+    keywords: ["musiala", "jamal musiala", "musiala goals", "musiala highlights", "musiala jersey", "musiala bayern", "buy musiala jersey"]
+  },
+  {
+    name: "Vini Jr.",
+    primaryKeyword: "vinicius",
+    keywords: ["vinicius", "vini jr", "vinicius junior", "vinicius goals", "vinicius highlights", "vinicius jersey", "vinicius real madrid", "buy vinicius jersey"]
+  },
+  {
+    name: "Rafael Leão",
+    primaryKeyword: "leao",
+    keywords: ["leao", "rafael leao", "leao goals", "leao highlights", "leao jersey", "leao milan", "buy leao jersey"]
+  },
+  {
+    name: "Florian Wirtz",
+    primaryKeyword: "wirtz",
+    keywords: ["wirtz", "florian wirtz", "wirtz goals", "wirtz highlights", "wirtz jersey", "wirtz leverkusen", "buy wirtz jersey"]
+  },
+  {
+    name: "Gavi",
+    primaryKeyword: "gavi",
+    keywords: ["gavi", "gavi goals", "gavi highlights", "gavi jersey", "gavi barcelona", "buy gavi jersey"]
+  },
+  {
+    name: "Enzo Fernandez",
+    primaryKeyword: "enzo fernandez",
+    keywords: ["enzo fernandez", "enzo chelsea", "enzo goals", "enzo highlights", "enzo jersey", "buy enzo jersey"]
+  },
+  {
+    name: "Declan Rice",
+    primaryKeyword: "declan rice",
+    keywords: ["declan rice", "rice arsenal", "rice goals", "rice highlights", "rice jersey", "buy rice jersey"]
+  },
+  {
+    name: "Kai Havertz",
+    primaryKeyword: "havertz",
+    keywords: ["havertz", "kai havertz", "havertz goals", "havertz highlights", "havertz jersey", "havertz arsenal", "buy havertz jersey"]
+  },
+  {
+    name: "Trent Alexander-Arnold",
+    primaryKeyword: "alexander arnold",
+    keywords: ["alexander arnold", "trent alexander arnold", "alexander arnold goals", "alexander arnold highlights", "alexander arnold jersey", "trent liverpool", "buy alexander arnold jersey"]
+  },
+  {
+    name: "Virgil Van Dijk",
+    primaryKeyword: "van dijk",
+    keywords: ["van dijk", "virgil van dijk", "van dijk goals", "van dijk highlights", "van dijk jersey", "van dijk liverpool", "buy van dijk jersey"]
+  },
+  {
+    name: "Gabriel Martinelli",
+    primaryKeyword: "martinelli",
+    keywords: ["martinelli", "gabriel martinelli", "martinelli goals", "martinelli highlights", "martinelli jersey", "martinelli arsenal", "buy martinelli jersey"]
+  },
+  {
+    name: "William Saliba",
+    primaryKeyword: "saliba",
+    keywords: ["saliba", "william saliba", "saliba goals", "saliba highlights", "saliba jersey", "saliba arsenal", "buy saliba jersey"]
+  },
+  {
+    name: "Cody Gakpo",
+    primaryKeyword: "gakpo",
+    keywords: ["gakpo", "cody gakpo", "gakpo goals", "gakpo highlights", "gakpo jersey", "gakpo liverpool", "buy gakpo jersey"]
+  },
+  {
+    name: "Alexander Isak",
+    primaryKeyword: "isak",
+    keywords: ["isak", "alexander isak", "isak goals", "isak highlights", "isak jersey", "isak newcastle", "buy isak jersey"]
   }
 ];
 
@@ -248,16 +305,20 @@ export class DataFetcher {
   }
 
   private generatePlayerDetails(playerName: string) {
-    // This is a simplified mapping - in a real app, this would come from a player database
-    const playerDB: Record<string, any> = {
-      "Lionel Messi": { age: 36, position: "RW", team: "Inter Miami", nationality: "Argentina" },
-      "Cristiano Ronaldo": { age: 39, position: "ST", team: "Al Nassr", nationality: "Portugal" },
-      "Kylian Mbappe": { age: 25, position: "ST", team: "Real Madrid", nationality: "France" },
-      "Erling Haaland": { age: 24, position: "ST", team: "Man City", nationality: "Norway" },
-      "Jude Bellingham": { age: 21, position: "CM", team: "Real Madrid", nationality: "England" }
-    };
-
-    return playerDB[playerName] || { 
+    // Use the comprehensive final player database
+    const metadata = FINAL_PLAYER_METADATA[playerName as keyof typeof FINAL_PLAYER_METADATA];
+    
+    if (metadata) {
+      return {
+        age: metadata.age,
+        position: metadata.position,
+        team: metadata.current_team,
+        nationality: metadata.nationality
+      };
+    }
+    
+    // Fallback for players not in the database
+    return { 
       age: 25, 
       position: "MID", 
       team: "Unknown FC", 
