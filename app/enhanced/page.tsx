@@ -17,7 +17,6 @@ import {
   TrendingDown, Users, Globe, Target, BarChart3 
 } from "lucide-react";
 import { generateEnhancedPlayerData, marketsList } from '@/lib/market-data-generator';
-import { dataFetcher } from '@/lib/data-fetcher';
 
 // Dynamic import for Plotly to avoid SSR issues
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
@@ -100,8 +99,18 @@ export default function EnhancedDashboard() {
   // Test DataForSEO API connection
   const testApiConnection = async () => {
     try {
-      const isConnected = await dataFetcher.testConnection();
-      setApiConnectionStatus(isConnected ? "connected" : "error");
+      const response = await fetch('/api/dataforseo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'test_connection'
+        }),
+      });
+
+      const result = await response.json();
+      setApiConnectionStatus(result.success ? "connected" : "error");
     } catch (error) {
       console.error("API connection test failed:", error);
       setApiConnectionStatus("error");
