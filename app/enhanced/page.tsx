@@ -135,12 +135,16 @@ export default function EnhancedDashboard() {
         "Florian Wirtz"
       ];
       
-      const freshData = await dataFetcher.fetchPlayerData(popularPlayers, selectedMarkets);
-      setPlayers(freshData);
+      // For now, use sample data - batch player fetching needs to be implemented
+      // TODO: Implement batch API calls for multiple players
+      const sampleData = generateEnhancedPlayerData().filter(
+        player => popularPlayers.includes(player.name)
+      );
+      setPlayers(sampleData);
       setDataSource("dataforseo");
       
       // Update volume range based on new data
-      const volumes = freshData.map(p => p.total_volume);
+      const volumes = sampleData.map(p => p.total_volume);
       setVolumeRange([Math.min(...volumes), Math.max(...volumes)]);
       
     } catch (error) {
