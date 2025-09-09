@@ -16,12 +16,21 @@ import {
   Menu, X, Download, Settings, RefreshCcw, TrendingUp, 
   TrendingDown, Users, Globe, Target, BarChart3 
 } from "lucide-react";
-import { comprehensivePlayerData, marketsList, EnhancedPlayerData } from '@/lib/enhanced-sample-data';
+import { EnhancedPlayerData } from '@/lib/enhanced-sample-data';
+import { generateEnhancedPlayerData, marketsList } from '@/lib/market-data-generator';
 import { dataFetcher } from '@/lib/data-fetcher';
 import { generateFinalPlayerData, FINAL_PLAYER_NAMES } from '@/lib/final-player-data';
 
 // Dynamic import for Plotly to avoid SSR issues
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
+
+interface MarketData {
+  market: string;
+  volume: number;
+  player_volume: number;
+  merch_volume: number;
+  trend_percent: number;
+}
 
 interface PlayerData {
   id: number;
@@ -33,16 +42,11 @@ interface PlayerData {
   opportunity_score: number;
   market_count: number;
   market: string;
+  markets?: MarketData[]; // Optional for backward compatibility
   age: number;
   position: string;
   current_team: string;
   nationality: string;
-}
-
-interface MarketData {
-  market: string;
-  volume: number;
-  trend: number;
 }
 
 export default function EnhancedDashboard() {
@@ -77,13 +81,19 @@ export default function EnhancedDashboard() {
     // Set mounted state for hydration
     setIsMounted(true);
     
-    // Load the final player data instead of old comprehensive data
-    const finalData = generateFinalPlayerData();
-    setPlayers(finalData);
+    // Load the enhanced player data with market-specific search demand
+    const enhancedData = generateEnhancedPlayerData();
+    setPlayers(enhancedData);
     
-    // Set initial volume range based on data
-    const volumes = finalData.map(p => p.total_volume);
-    setVolumeRange([Math.min(...volumes), Math.max(...volumes)]);
+    // Set initial volume range based on aggregated market data
+    // Since we're filtering by markets, we need to calculate the range for selected markets
+    const initialSelectedMarkets = ["United Kingdom", "United States", "Germany", "Spain"];
+    const marketBasedVolumes = enhancedData.map(player => {
+      const selectedMarketData = player.markets?.filter(m => initialSelectedMarkets.includes(m.market)) || [];
+      return selectedMarketData.reduce((sum, m) => sum + m.volume, 0);
+    }).filter(vol => vol > 0);
+    
+    setVolumeRange([Math.min(...marketBasedVolumes), Math.max(...marketBasedVolumes)]);
     
     // Test API connection on load
     testApiConnection();
@@ -136,13 +146,19 @@ export default function EnhancedDashboard() {
 
   // Load sample data
   const loadSampleData = () => {
-    const finalData = generateFinalPlayerData();
-    setPlayers(finalData);
+    const enhancedData = generateEnhancedPlayerData();
+    setPlayers(enhancedData);
     setDataSource("sample");
     
-    // Reset volume range
-    const volumes = finalData.map(p => p.total_volume);
-    setVolumeRange([Math.min(...volumes), Math.max(...volumes)]);
+    // Reset volume range based on currently selected markets
+    const marketBasedVolumes = enhancedData.map(player => {
+      const selectedMarketData = player.markets?.filter(m => selectedMarkets.includes(m.market)) || [];
+      return selectedMarketData.reduce((sum, m) => sum + m.volume, 0);
+    }).filter(vol => vol > 0);
+    
+    if (marketBasedVolumes.length > 0) {
+      setVolumeRange([Math.min(...marketBasedVolumes), Math.max(...marketBasedVolumes)]);
+    }
   };
 
   // Close dropdown when clicking outside
@@ -157,12 +173,45 @@ export default function EnhancedDashboard() {
     }
   }, [showPlayerDropdown]);
 
-  // Filter data based on selections
-  const filteredData = players.filter(player => 
-    selectedMarkets.includes(player.market) &&
-    player.total_volume >= volumeRange[0] &&
-    player.total_volume <= volumeRange[1]
-  );
+  // Filter and aggregate data based on selected markets
+  const filteredData = players
+    .map(player => {
+      // Aggregate search volume data for selected markets only
+      const selectedMarketData = player.markets?.filter(m => selectedMarkets.includes(m.market)) || [];
+      
+      if (selectedMarketData.length === 0) {
+        // If no market data available, return null to filter out
+        return null;
+      }
+      
+      // Calculate aggregated metrics for selected markets
+      const aggregatedVolume = selectedMarketData.reduce((sum, m) => sum + m.volume, 0);
+      const aggregatedPlayerVolume = selectedMarketData.reduce((sum, m) => sum + m.player_volume, 0);
+      const aggregatedMerchVolume = selectedMarketData.reduce((sum, m) => sum + m.merch_volume, 0);
+      const avgTrend = selectedMarketData.length > 0 
+        ? selectedMarketData.reduce((sum, m) => sum + m.trend_percent, 0) / selectedMarketData.length 
+        : 0;
+      
+      // Find primary market among selected ones
+      const primaryMarket = selectedMarketData.reduce((max, current) => 
+        current.volume > max.volume ? current : max
+      );
+      
+      return {
+        ...player,
+        total_volume: aggregatedVolume,
+        player_volume: aggregatedPlayerVolume,
+        merch_volume: aggregatedMerchVolume,
+        trend_percent: Number(avgTrend.toFixed(1)),
+        market: primaryMarket.market,
+        market_count: selectedMarketData.length
+      };
+    })
+    .filter((player): player is NonNullable<typeof player> => 
+      player !== null && 
+      player.total_volume >= volumeRange[0] && 
+      player.total_volume <= volumeRange[1]
+    );
 
   // Sort filtered data based on selected sort option
   const sortedData = [...filteredData].sort((a, b) => {
@@ -217,7 +266,7 @@ export default function EnhancedDashboard() {
 
 
   // Function to determine if a player should have a text label (isolated enough)
-  const shouldShowLabel = (player: EnhancedPlayerData, allPlayers: EnhancedPlayerData[]) => {
+  const shouldShowLabel = (player: PlayerData, allPlayers: PlayerData[]) => {
     const minDistance = 50000; // Minimum volume distance to avoid overlap
     const minTrendDistance = 8; // Minimum trend distance to avoid overlap
     

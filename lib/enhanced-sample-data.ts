@@ -1,3 +1,11 @@
+export interface MarketData {
+  market: string;
+  volume: number;
+  player_volume: number;
+  merch_volume: number;
+  trend_percent: number;
+}
+
 export interface EnhancedPlayerData {
   id: number;
   name: string;
@@ -7,7 +15,8 @@ export interface EnhancedPlayerData {
   trend_percent: number;
   opportunity_score: number;
   market_count: number;
-  market: string;
+  market: string; // Keep for backward compatibility, represents primary/highest volume market
+  markets: MarketData[]; // New: data for all markets
   age: number;
   position: string;
   current_team: string;
