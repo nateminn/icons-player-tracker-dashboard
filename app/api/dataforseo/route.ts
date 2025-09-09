@@ -58,9 +58,21 @@ export async function POST(request: NextRequest) {
           testData: testResults
         });
 
+      case 'run_micro_test':
+        // Import the Google Ads merch service
+        const { googleAdsMerchService } = await import('@/lib/google-ads-merch-service');
+        
+        const microTestResults = await googleAdsMerchService.runMicroTest();
+        
+        return NextResponse.json({
+          success: true,
+          message: 'Micro test completed successfully',
+          data: microTestResults
+        });
+
       default:
         return NextResponse.json(
-          { error: 'Invalid action. Use: search_volume, player_data, or test_connection' },
+          { error: 'Invalid action. Use: search_volume, player_data, test_connection, or run_micro_test' },
           { status: 400 }
         );
     }
