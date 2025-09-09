@@ -72,6 +72,7 @@ export default function EnhancedDashboard() {
   const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
   const [dataSource, setDataSource] = useState<"sample" | "dataforseo">("sample");
   const [apiConnectionStatus, setApiConnectionStatus] = useState<"unknown" | "connected" | "error">("unknown");
+  const [microTestResults, setMicroTestResults] = useState<any>(null);
 
 
   useEffect(() => {
@@ -137,7 +138,8 @@ export default function EnhancedDashboard() {
       
       if (result.success) {
         console.log('✅ Micro test completed!', result.data);
-        alert(`🎉 Micro Test Completed!\n\nTested ${result.data.keywordCount} merch keywords for ${result.data.players.length} players across ${result.data.markets.length} markets.\n\nEstimated cost: $${result.data.estimatedCost}\n\nCheck console for detailed results.`);
+        setMicroTestResults(result.data);
+        alert(`🎉 Micro Test Completed!\n\nTested ${result.data.keywordCount} merch keywords for ${result.data.players.length} players across ${result.data.markets.length} markets.\n\nEstimated cost: $${result.data.estimatedCost}\n\nResults now displayed below!`);
       } else {
         throw new Error(result.error || 'Micro test failed');
       }
@@ -433,6 +435,41 @@ export default function EnhancedDashboard() {
                   ⚠️ Using DataForSEO ${process.env.DATAFORSEO_USE_SANDBOX === 'true' ? 'Sandbox' : 'Live API'}.
                   {process.env.DATAFORSEO_USE_SANDBOX === 'true' ? ' Free sandbox data.' : ' Live requests cost credits.'}
                 </div>
+              </div>
+            )}
+
+            {/* Micro Test Results */}
+            {microTestResults && (
+              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
+                <h4 className="font-medium text-green-800 mb-2">🧪 Micro Test Results</h4>
+                <div className="text-sm text-green-700 space-y-1">
+                  <p><strong>Players:</strong> {microTestResults.players.join(', ')}</p>
+                  <p><strong>Markets:</strong> {microTestResults.markets.join(', ')}</p>
+                  <p><strong>Keywords tested:</strong> {microTestResults.keywordCount}</p>
+                  <p><strong>Cost:</strong> ${microTestResults.estimatedCost}</p>
+                </div>
+                
+                {/* Sample results for each market */}
+                {Object.entries(microTestResults.results || {}).map(([market, keywords]: [string, any]) => (
+                  <div key={market} className="mt-3 p-2 bg-white rounded border">
+                    <p className="font-medium text-sm">{market} - Top Keywords:</p>
+                    <div className="text-xs space-y-1 mt-1">
+                      {keywords.slice(0, 3).map((kw: any, i: number) => (
+                        <div key={i} className="flex justify-between">
+                          <span>"{kw.keyword}"</span>
+                          <span>{kw.search_volume?.toLocaleString() || 0} searches/month</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                
+                <button 
+                  onClick={() => setMicroTestResults(null)}
+                  className="mt-2 text-xs text-green-600 hover:text-green-800"
+                >
+                  Hide Results
+                </button>
               </div>
             )}
           </div>
