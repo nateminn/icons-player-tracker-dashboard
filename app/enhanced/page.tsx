@@ -117,6 +117,38 @@ export default function EnhancedDashboard() {
     }
   };
 
+  // Run micro test for merch keywords
+  const runMicroTest = async () => {
+    setIsLoadingData(true);
+    try {
+      console.log('🧪 Starting Micro Test - 5 players × 2 markets with merch terms...');
+      
+      const response = await fetch('/api/dataforseo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'run_micro_test'
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ Micro test completed!', result.data);
+        alert(`🎉 Micro Test Completed!\n\nTested ${result.data.keywordCount} merch keywords for ${result.data.players.length} players across ${result.data.markets.length} markets.\n\nEstimated cost: $${result.data.estimatedCost}\n\nCheck console for detailed results.`);
+      } else {
+        throw new Error(result.error || 'Micro test failed');
+      }
+    } catch (error) {
+      console.error("❌ Micro test failed:", error);
+      alert("Micro test failed. Check console for details.");
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
   // Fetch data from DataForSEO
   const fetchDataFromAPI = async () => {
     setIsLoadingData(true);
@@ -379,6 +411,19 @@ export default function EnhancedDashboard() {
                 <Settings className="h-4 w-4 mr-2" />
                 Test API Connection
               </Button>
+
+              {apiConnectionStatus === "connected" && (
+                <Button 
+                  className="w-full"
+                  variant="default" 
+                  onClick={runMicroTest}
+                  disabled={isLoadingData}
+                  style={{ backgroundColor: '#16a34a', color: 'white' }}
+                >
+                  <Target className="h-4 w-4 mr-2" />
+                  🧪 Run Micro Test ($0.05)
+                </Button>
+              )}
             </div>
 
             {/* API Usage Warning */}
