@@ -1,6 +1,6 @@
 // Data fetcher that integrates DataForSEO API with dashboard
 import { EnhancedPlayerData } from './enhanced-sample-data';
-import { FINAL_PLAYER_METADATA, FINAL_PLAYER_NAMES } from './final-player-data';
+import { FINAL_PLAYER_METADATA } from './final-player-data';
 
 interface PlayerKeywordMapping {
   name: string;
@@ -276,6 +276,13 @@ export class DataFetcher {
       opportunity_score: opportunityScore,
       market_count: marketCount,
       market: market,
+      markets: [{
+        market: market,
+        volume: totalVolume,
+        player_volume: playerVolume,
+        merch_volume: merchVolume,
+        trend_percent: Number(trendPercent.toFixed(1))
+      }],
       age: playerDetails.age,
       position: playerDetails.position,
       current_team: playerDetails.team,
@@ -287,16 +294,27 @@ export class DataFetcher {
     const playerDetails = this.generatePlayerDetails(playerName);
     const baseVolume = Math.floor(Math.random() * 500000) + 100000; // 100K-600K
     
+    const playerVolume = Math.floor(baseVolume * 0.7);
+    const merchVolume = Math.floor(baseVolume * 0.3);
+    const trendPercent = (Math.random() - 0.5) * 60; // ±30%
+    
     return {
       id,
       name: playerName,
       total_volume: baseVolume,
-      player_volume: Math.floor(baseVolume * 0.7),
-      merch_volume: Math.floor(baseVolume * 0.3),
-      trend_percent: (Math.random() - 0.5) * 60, // ±30%
+      player_volume: playerVolume,
+      merch_volume: merchVolume,
+      trend_percent: trendPercent,
       opportunity_score: Math.floor(Math.random() * 40) + 60, // 60-100
       market_count: Math.floor(Math.random() * 5) + 3,
       market: market,
+      markets: [{
+        market: market,
+        volume: baseVolume,
+        player_volume: playerVolume,
+        merch_volume: merchVolume,
+        trend_percent: trendPercent
+      }],
       age: playerDetails.age,
       position: playerDetails.position,
       current_team: playerDetails.team,

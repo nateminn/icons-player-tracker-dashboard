@@ -132,7 +132,7 @@ class DataForSEOService {
         
         // Calculate volumes based on keyword categories
         const playerKeywords = keywords.filter(k => this.isPlayerKeyword(k, playerName));
-        const merchKeywords = keywords.filter(k => this.isMerchKeyword(k, playerName));
+        const merchKeywords = keywords.filter(k => this.isMerchKeyword(k));
         
         let playerVolume = 0;
         let merchVolume = 0;
@@ -202,7 +202,7 @@ class DataForSEOService {
            lowerKeyword === playerName.toLowerCase();
   }
 
-  private isMerchKeyword(keyword: string, playerName: string): boolean {
+  private isMerchKeyword(keyword: string): boolean {
     const merchKeywordIndicators = ['jersey', 'shirt', 'merchandise', 'kit', 'boots', 'buy'];
     const lowerKeyword = keyword.toLowerCase();
     return merchKeywordIndicators.some(indicator => lowerKeyword.includes(indicator));

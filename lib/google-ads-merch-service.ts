@@ -126,7 +126,13 @@ class GoogleAdsMerchService {
   ): Promise<GoogleAdsKeywordResult[]> {
     const url = `${this.baseUrl}/keywords_data/google_ads/search_volume/live`;
     
-    const payload: any = {
+    const payload: {
+      keywords: string[];
+      location_code: number;
+      language_code: string;
+      date_from?: string;
+      date_to?: string;
+    } = {
       keywords: keywords.slice(0, 1000), // Max 1000 keywords per request
       location_code: locationCode,
       language_code: languageCode
@@ -176,7 +182,14 @@ class GoogleAdsMerchService {
   }
 
   // Run micro test (5 players × 2 markets for $0.05)
-  async runMicroTest(): Promise<any> {
+  async runMicroTest(): Promise<{
+    testType: string;
+    players: string[];
+    markets: string[];
+    keywordCount: number;
+    estimatedCost: number;
+    results: Record<string, GoogleAdsKeywordResult[]>;
+  }> {
     console.log('🧪 Starting Micro Test ($0.05)...');
     
     const testPlayers = FINAL_PLAYER_NAMES.slice(0, 5);
@@ -187,7 +200,7 @@ class GoogleAdsMerchService {
     console.log(`🌍 Markets: ${testMarkets.map(([name]) => name).join(', ')}`);
     console.log(`🔑 Keywords: ${testKeywords.length} total`);
     
-    const results = {};
+    const results: Record<string, GoogleAdsKeywordResult[]> = {};
     
     for (const [market, locationCode] of testMarkets) {
       console.log(`\n📊 Testing market: ${market}`);
@@ -214,7 +227,15 @@ class GoogleAdsMerchService {
   }
 
   // Calculate full production requirements
-  calculateProductionRequirements(merchTerms: string[]): any {
+  calculateProductionRequirements(merchTerms: string[]): {
+    totalPlayers: number;
+    totalMarkets: number;
+    totalTerms: number;
+    totalKeywords: number;
+    requestsPerMarket: number;
+    totalRequests: number;
+    estimatedCost: string;
+  } {
     const totalPlayers = FINAL_PLAYER_NAMES.length; // 125
     const totalMarkets = Object.keys(PRIORITY_MARKETS).length; // 6
     const totalTerms = merchTerms.length;

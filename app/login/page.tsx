@@ -33,7 +33,7 @@ export default function Login() {
         const data = await res.json();
         setError(data.message || 'Invalid password');
       }
-    } catch (error) {
+    } catch {
       setError('Login failed. Please try again.');
     } finally {
       setLoading(false);

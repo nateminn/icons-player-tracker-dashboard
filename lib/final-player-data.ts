@@ -753,7 +753,21 @@ export const FINAL_PLAYER_METADATA = {
 };
 
 // Generate initial sample data for these players
-export const generateFinalPlayerData = (): any[] => {
+export const generateFinalPlayerData = (): Array<{
+  id: number;
+  name: string;
+  total_volume: number;
+  player_volume: number;
+  merch_volume: number;
+  trend_percent: number;
+  opportunity_score: number;
+  market_count: number;
+  market: string;
+  age: number;
+  position: string;
+  current_team: string;
+  nationality: string;
+}> => {
   const playerNames = Object.keys(FINAL_PLAYER_METADATA);
   const markets = ["United Kingdom", "United States", "Germany", "Spain", "France", "Italy", "Brazil"];
   

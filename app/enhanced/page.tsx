@@ -16,10 +16,8 @@ import {
   Menu, X, Download, Settings, RefreshCcw, TrendingUp, 
   TrendingDown, Users, Globe, Target, BarChart3 
 } from "lucide-react";
-import { EnhancedPlayerData } from '@/lib/enhanced-sample-data';
 import { generateEnhancedPlayerData, marketsList } from '@/lib/market-data-generator';
 import { dataFetcher } from '@/lib/data-fetcher';
-import { generateFinalPlayerData, FINAL_PLAYER_NAMES } from '@/lib/final-player-data';
 
 // Dynamic import for Plotly to avoid SSR issues
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
@@ -58,7 +56,7 @@ export default function EnhancedDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedMarkets, setSelectedMarkets] = useState<string[]>(["United Kingdom", "United States", "Germany", "Spain"]);
   const [volumeRange, setVolumeRange] = useState<number[]>([0, 1000000]);
-  const [dataMonth, setDataMonth] = useState(new Date());
+  const [dataMonth] = useState(new Date());
   const [topPlayersCount, setTopPlayersCount] = useState<number>(10);
   const [heatmapPlayerCount, setHeatmapPlayerCount] = useState<number>(10);
   const [selectedComparisonPlayers, setSelectedComparisonPlayers] = useState<string[]>([]);

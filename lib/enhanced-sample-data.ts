@@ -23,7 +23,8 @@ export interface EnhancedPlayerData {
   nationality: string;
 }
 
-export const comprehensivePlayerData: EnhancedPlayerData[] = [
+// Raw player data without markets property
+const rawPlayerData = [
   // Top tier global stars
   { id: 1, name: "Lionel Messi", total_volume: 850000, player_volume: 650000, merch_volume: 200000, trend_percent: 12, opportunity_score: 0, market_count: 8, market: "United States", age: 36, position: "RW", current_team: "Inter Miami", nationality: "Argentina" },
   { id: 2, name: "Cristiano Ronaldo", total_volume: 790000, player_volume: 590000, merch_volume: 200000, trend_percent: -5, opportunity_score: 0, market_count: 9, market: "Saudi Arabia", age: 39, position: "ST", current_team: "Al Nassr", nationality: "Portugal" },
@@ -68,6 +69,18 @@ export const comprehensivePlayerData: EnhancedPlayerData[] = [
   { id: 29, name: "Nicolo Barella", total_volume: 125000, player_volume: 95000, merch_volume: 30000, trend_percent: 18, opportunity_score: 63, market_count: 3, market: "Italy", age: 27, position: "CM", current_team: "Inter Milan", nationality: "Italy" },
   { id: 30, name: "Federico Chiesa", total_volume: 145000, player_volume: 110000, merch_volume: 35000, trend_percent: 8, opportunity_score: 58, market_count: 3, market: "Italy", age: 27, position: "RW", current_team: "Juventus", nationality: "Italy" },
 ];
+
+// Generate proper EnhancedPlayerData with markets property
+export const comprehensivePlayerData: EnhancedPlayerData[] = rawPlayerData.map(player => ({
+  ...player,
+  markets: [{
+    market: player.market,
+    volume: player.total_volume,
+    player_volume: player.player_volume,
+    merch_volume: player.merch_volume,
+    trend_percent: player.trend_percent
+  }]
+}));
 
 export const marketsList = ["United Kingdom", "United States", "Germany", "Spain", "Italy", "France", "Saudi Arabia", "Mexico", "China", "Japan"];
 
