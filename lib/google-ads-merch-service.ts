@@ -182,12 +182,13 @@ class GoogleAdsMerchService {
   }
 
   // Run micro test (5 players × 2 markets for $0.05)
-  async runMicroTest(): Promise<{
+  async runMicroTest(dateFrom?: string, dateTo?: string): Promise<{
     testType: string;
     players: string[];
     markets: string[];
     keywordCount: number;
     estimatedCost: number;
+    dateRange?: { from: string; to: string };
     results: Record<string, GoogleAdsKeywordResult[]>;
   }> {
     console.log('🧪 Starting Micro Test ($0.05)...');
@@ -200,12 +201,24 @@ class GoogleAdsMerchService {
     console.log(`🌍 Markets: ${testMarkets.map(([name]) => name).join(', ')}`);
     console.log(`🔑 Keywords: ${testKeywords.length} total`);
     
+    if (dateFrom && dateTo) {
+      console.log(`📅 Date range: ${dateFrom} to ${dateTo}`);
+    } else {
+      console.log(`📅 Date range: Current + 12 months historical`);
+    }
+    
     const results: Record<string, GoogleAdsKeywordResult[]> = {};
     
     for (const [market, locationCode] of testMarkets) {
       console.log(`\n📊 Testing market: ${market}`);
       try {
-        const marketResults = await this.getKeywordSearchVolume(testKeywords, locationCode);
+        const marketResults = await this.getKeywordSearchVolume(
+          testKeywords, 
+          locationCode, 
+          'en',
+          dateFrom,
+          dateTo
+        );
         results[market] = marketResults;
         
         // Add delay between requests  
@@ -222,6 +235,7 @@ class GoogleAdsMerchService {
       markets: testMarkets.map(([name]) => name),
       keywordCount: testKeywords.length,
       estimatedCost: 0.05,
+      dateRange: dateFrom && dateTo ? { from: dateFrom, to: dateTo } : undefined,
       results
     };
   }

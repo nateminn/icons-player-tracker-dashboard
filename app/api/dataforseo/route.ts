@@ -62,7 +62,8 @@ export async function POST(request: NextRequest) {
         // Import the Google Ads merch service
         const { googleAdsMerchService } = await import('@/lib/google-ads-merch-service');
         
-        const microTestResults = await googleAdsMerchService.runMicroTest();
+        const { dateFrom, dateTo } = params;
+        const microTestResults = await googleAdsMerchService.runMicroTest(dateFrom, dateTo);
         
         return NextResponse.json({
           success: true,

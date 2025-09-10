@@ -78,6 +78,7 @@ export default function EnhancedDashboard() {
     markets: string[];
     keywordCount: number;
     estimatedCost: number;
+    dateRange?: { from: string; to: string };
     results: Record<string, Array<{
       keyword: string;
       search_volume?: number;
@@ -85,6 +86,12 @@ export default function EnhancedDashboard() {
       cpc?: number;
     }>>;
   } | null>(null);
+  
+  // Date range state - default to August 2025 for executive report
+  const [dateRange, setDateRange] = useState<{from: string; to: string}>({
+    from: '2025-08-01',
+    to: '2025-08-31'
+  });
 
 
   useEffect(() => {
@@ -142,7 +149,9 @@ export default function EnhancedDashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          action: 'run_micro_test'
+          action: 'run_micro_test',
+          dateFrom: dateRange.from,
+          dateTo: dateRange.to
         }),
       });
 
@@ -427,16 +436,46 @@ export default function EnhancedDashboard() {
               </Button>
 
               {apiConnectionStatus === "connected" && (
-                <Button 
-                  className="w-full"
-                  variant="default" 
-                  onClick={runMicroTest}
-                  disabled={isLoadingData}
-                  style={{ backgroundColor: '#16a34a', color: 'white' }}
-                >
-                  <Target className="h-4 w-4 mr-2" />
-                  🧪 Run Micro Test ($0.05)
-                </Button>
+                <>
+                  {/* Date Range Controls */}
+                  <div className="mt-3 p-3 rounded-md bg-blue-50 border border-blue-200">
+                    <div className="text-xs font-medium text-blue-700 mb-2">📅 Executive Report Date Range</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-gray-600 block mb-1">From:</label>
+                        <input
+                          type="date"
+                          value={dateRange.from}
+                          onChange={(e) => setDateRange(prev => ({...prev, from: e.target.value}))}
+                          className="w-full text-xs p-1 border rounded"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-gray-600 block mb-1">To:</label>
+                        <input
+                          type="date"
+                          value={dateRange.to}
+                          onChange={(e) => setDateRange(prev => ({...prev, to: e.target.value}))}
+                          className="w-full text-xs p-1 border rounded"
+                        />
+                      </div>
+                    </div>
+                    <div className="text-xs text-blue-600 mt-1">
+                      Default: August 2025 (for executive report)
+                    </div>
+                  </div>
+                  
+                  <Button 
+                    className="w-full mt-3"
+                    variant="default" 
+                    onClick={runMicroTest}
+                    disabled={isLoadingData}
+                    style={{ backgroundColor: '#16a34a', color: 'white' }}
+                  >
+                    <Target className="h-4 w-4 mr-2" />
+                    🧪 Run Micro Test - {dateRange.from} to {dateRange.to} ($0.05)
+                  </Button>
+                </>
               )}
             </div>
 
@@ -458,6 +497,9 @@ export default function EnhancedDashboard() {
                   <p><strong>Players:</strong> {microTestResults.players.join(', ')}</p>
                   <p><strong>Markets:</strong> {microTestResults.markets.join(', ')}</p>
                   <p><strong>Keywords tested:</strong> {microTestResults.keywordCount}</p>
+                  <p><strong>Date Range:</strong> {microTestResults.dateRange 
+                    ? `${microTestResults.dateRange.from} to ${microTestResults.dateRange.to}` 
+                    : 'Current + 12 months historical'}</p>
                   <p><strong>Cost:</strong> ${microTestResults.estimatedCost}</p>
                 </div>
                 
