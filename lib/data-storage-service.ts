@@ -70,7 +70,7 @@ class DataStorageService {
         players: (processedResults.players as string[]) || [],
         markets: (processedResults.markets as string[]) || [],
         keywordCount: (processedResults.keywordCount as number) || 0,
-        actualCost: (processedResults.actualCost as number) || 0,
+        actualCost: (processedResults.actualCost as number) || (processedResults.estimatedCost as number) || 0,
         dateRange: processedResults.dateRange as { from: string; to: string } | undefined,
         apiMode: (processedResults.apiMode as string) || 'Unknown'
       },
@@ -114,9 +114,18 @@ class DataStorageService {
       monthlyData[market] = [];
       
       (keywords as Array<Record<string, unknown>>).forEach((kw) => {
-        // Extract player name from keyword
-        const playerMatch = (kw.keyword as string).match(/^([A-Za-z\s]+?)\s+(shirt|jersey|signed|autograph|memorabilia|boots|cleats|card|poster|authentic|official|framed|ball|collectibles|signature|coins|exclusive|dedication|artwork|art|sports|soccer|football|limited|edition)/i);
-        const player = playerMatch ? playerMatch[1].trim() : 'Unknown';
+        // Extract player name from keyword (handle both real merchandise and sandbox test data)
+        const keyword = kw.keyword as string;
+        let player = 'Unknown';
+        
+        // Try to match player merchandise format: "Player Name + merchandise term"
+        const playerMatch = keyword.match(/^([A-Za-z\s]+?)\s+(shirt|jersey|signed|autograph|memorabilia|boots|cleats|card|poster|authentic|official|framed|ball|collectibles|signature|coins|exclusive|dedication|artwork|art|sports|soccer|football|limited|edition)/i);
+        if (playerMatch) {
+          player = playerMatch[1].trim();
+        } else {
+          // For sandbox/test data, use the keyword itself as "player"
+          player = `[Test: ${keyword}]`;
+        }
         
         if (kw.monthly_searches && Array.isArray(kw.monthly_searches)) {
           monthlyData[market].push({
@@ -171,8 +180,18 @@ class DataStorageService {
     
     Object.entries(data.processedResults.results || {}).forEach(([market, keywords]) => {
       (keywords as Array<Record<string, unknown>>).forEach((kw) => {
-        const playerMatch = (kw.keyword as string).match(/^([A-Za-z\s]+?)\s+(shirt|jersey|signed|autograph|memorabilia|boots|cleats|card|poster|authentic|official|framed|ball|collectibles|signature|coins|exclusive|dedication|artwork|art|sports|soccer|football|limited|edition)/i);
-        const player = playerMatch ? playerMatch[1].trim() : 'Unknown';
+        // Extract player name from keyword (handle both real merchandise and sandbox test data)
+        const keyword = kw.keyword as string;
+        let player = 'Unknown';
+        
+        // Try to match player merchandise format: "Player Name + merchandise term"
+        const playerMatch = keyword.match(/^([A-Za-z\s]+?)\s+(shirt|jersey|signed|autograph|memorabilia|boots|cleats|card|poster|authentic|official|framed|ball|collectibles|signature|coins|exclusive|dedication|artwork|art|sports|soccer|football|limited|edition)/i);
+        if (playerMatch) {
+          player = playerMatch[1].trim();
+        } else {
+          // For sandbox/test data, use the keyword itself as "player"
+          player = `[Test: ${keyword}]`;
+        }
         
         const monthlyTrend = kw.monthly_searches && Array.isArray(kw.monthly_searches) ? 
           kw.monthly_searches.slice(-3).map((m: {search_volume: number}) => m.search_volume).join(';') : 

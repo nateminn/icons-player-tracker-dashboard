@@ -210,7 +210,7 @@ export default function EnhancedDashboard() {
   };
 
   const runFullProductionTest = async () => {
-    if (!window.confirm("🚀 FULL PRODUCTION TEST\n\nThis will process 18,750 keywords across 125 players × 30 merch terms × 5 markets.\n\nEstimated cost: ~$18.75\nEstimated time: ~30 minutes\n\nAre you sure you want to proceed?")) {
+    if (!window.confirm("FULL PRODUCTION TEST\n\nThis will process 18,750 keywords across 125 players × 30 merch terms × 5 markets.\n\nEstimated cost: ~$18.75\nEstimated time: ~30 minutes\n\nAre you sure you want to proceed?")) {
       return;
     }
     
@@ -235,7 +235,7 @@ export default function EnhancedDashboard() {
       if (result.success) {
         console.log('✅ Full production test completed!', result.data);
         setProductionTestResults(result.data);
-        alert(`🎉 Full Production Test Completed!\n\nProcessed ${result.data.keywordCount} keywords for ${result.data.players.length} players across ${result.data.markets.length} markets.\n\nTotal requests: ${result.data.totalRequests}\nActual cost: $${result.data.estimatedCost}\n\nResults now displayed below!`);
+        alert(`Full Production Test Completed!\n\nProcessed ${result.data.keywordCount} keywords for ${result.data.players.length} players across ${result.data.markets.length} markets.\n\nTotal requests: ${result.data.totalRequests}\nActual cost: $${result.data.estimatedCost}\n\nResults now displayed below!`);
       } else {
         throw new Error(result.error || 'Full production test failed');
       }
