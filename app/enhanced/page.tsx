@@ -72,7 +72,19 @@ export default function EnhancedDashboard() {
   const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
   const [dataSource, setDataSource] = useState<"sample" | "dataforseo">("sample");
   const [apiConnectionStatus, setApiConnectionStatus] = useState<"unknown" | "connected" | "error">("unknown");
-  const [microTestResults, setMicroTestResults] = useState<any>(null);
+  const [microTestResults, setMicroTestResults] = useState<{
+    testType: string;
+    players: string[];
+    markets: string[];
+    keywordCount: number;
+    estimatedCost: number;
+    results: Record<string, Array<{
+      keyword: string;
+      search_volume?: number;
+      competition?: string;
+      cpc?: number;
+    }>>;
+  } | null>(null);
 
 
   useEffect(() => {
@@ -450,13 +462,13 @@ export default function EnhancedDashboard() {
                 </div>
                 
                 {/* Sample results for each market */}
-                {Object.entries(microTestResults.results || {}).map(([market, keywords]: [string, any]) => (
+                {Object.entries(microTestResults.results || {}).map(([market, keywords]) => (
                   <div key={market} className="mt-3 p-2 bg-white rounded border">
                     <p className="font-medium text-sm">{market} - Top Keywords:</p>
                     <div className="text-xs space-y-1 mt-1">
-                      {keywords.slice(0, 3).map((kw: any, i: number) => (
+                      {keywords.slice(0, 3).map((kw, i: number) => (
                         <div key={i} className="flex justify-between">
-                          <span>"{kw.keyword}"</span>
+                          <span>&quot;{kw.keyword}&quot;</span>
                           <span>{kw.search_volume?.toLocaleString() || 0} searches/month</span>
                         </div>
                       ))}
