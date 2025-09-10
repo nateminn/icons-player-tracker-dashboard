@@ -205,6 +205,11 @@ class GoogleAdsMerchService {
     const testMarkets = Object.entries(PRIORITY_MARKETS).slice(0, 2);
     const testKeywords = this.generatePlayerMerchKeywords(testPlayers, APPROVED_MERCH_TERMS);
     
+    // SAFETY VALIDATION for micro test too
+    if (!mode.includes('Sandbox')) {
+      this.validateSpending(0.05);
+    }
+    
     console.log(`👥 Players: ${testPlayers.join(', ')}`);
     console.log(`🌍 Markets: ${testMarkets.map(([name]) => name).join(', ')}`);
     console.log(`🔑 Keywords: ${testKeywords.length} total`);
@@ -268,6 +273,22 @@ class GoogleAdsMerchService {
     return testResults;
   }
 
+  // Validate spending is authorized
+  private validateSpending(estimatedCost: number): void {
+    const allowRealMoney = process.env.ALLOW_REAL_MONEY_TESTS === 'true';
+    const maxCost = parseFloat(process.env.MAX_ALLOWED_COST || '1.50');
+    
+    if (!allowRealMoney) {
+      throw new Error('🚨 SAFETY BLOCK: Real money tests disabled. Set ALLOW_REAL_MONEY_TESTS=true in .env.local');
+    }
+    
+    if (estimatedCost > maxCost) {
+      throw new Error(`🚨 COST LIMIT EXCEEDED: Estimated cost $${estimatedCost.toFixed(2)} > limit $${maxCost.toFixed(2)}`);
+    }
+    
+    console.log(`💰 Cost validation passed: $${estimatedCost.toFixed(2)} ≤ $${maxCost.toFixed(2)}`);
+  }
+
   // Run full production test (125 players × 5 markets × 30 terms = 18,750 keywords)
   async runFullProductionTest(dateFrom?: string, dateTo?: string): Promise<{
     testType: string;
@@ -293,6 +314,9 @@ class GoogleAdsMerchService {
     const requestsPerMarket = Math.ceil(allKeywords.length / keywordsPerRequest);
     const totalRequests = requestsPerMarket * allMarkets.length;
     const estimatedCost = totalRequests * 0.05; // $0.05 per request
+    
+    // SAFETY VALIDATION - Prevent surprise charges
+    this.validateSpending(estimatedCost);
     
     console.log(`👥 Players: ${allPlayers.length}`);
     console.log(`🌍 Markets: ${allMarkets.map(([name]) => name).join(', ')}`);
