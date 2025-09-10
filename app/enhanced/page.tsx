@@ -106,10 +106,10 @@ export default function EnhancedDashboard() {
     }>>;
   } | null>(null);
   
-  // Date range state - default to August 2025 for executive report
+  // Date range state - default to July 2025 for executive report
   const [dateRange, setDateRange] = useState<{from: string; to: string}>({
-    from: '2025-08-01',
-    to: '2025-08-31'
+    from: '2025-07-01',
+    to: '2025-07-31'
   });
   
   // Detailed results view state
@@ -247,6 +247,79 @@ export default function EnhancedDashboard() {
     }
   };
 
+  const runLabsMicroTest = async () => {
+    setIsLoadingData(true);
+    try {
+      console.log('🧪 Starting Labs API Micro Test - 5 players × 2 markets × 30 terms...');
+      
+      const response = await fetch('/api/dataforseo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'run_labs_micro_test',
+          dateFrom: dateRange.from,
+          dateTo: dateRange.to,
+          useSandbox: sandboxMode
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ Labs micro test completed!', result.data);
+        setMicroTestResults(result.data);
+        alert(`🎉 Labs API Micro Test Completed!\n\nProcessed ${result.data.keywordCount} keywords for ${result.data.players.length} players.\n\nActual cost: $${result.data.actualCost.toFixed(3)} (90% cheaper!)\n\nResults now displayed below!`);
+      } else {
+        throw new Error(result.error || 'Labs micro test failed');
+      }
+    } catch (error) {
+      console.error("❌ Labs micro test failed:", error);
+      alert("Labs micro test failed. Check console for details.");
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const runLabsFullProductionTest = async () => {
+    if (!window.confirm("💰 LABS API FULL PRODUCTION TEST\n\nThis will process 18,750 keywords across 125 players × 30 merch terms × 5 markets.\n\nEstimated cost: ~$1.89 (90% CHEAPER than Google Ads API!)\nEstimated time: ~90 minutes\n\nAre you sure you want to proceed?")) {
+      return;
+    }
+    
+    setIsLoadingData(true);
+    try {
+      console.log('🚀 Starting Labs API Full Production Test - 90% cheaper!');
+      
+      const response = await fetch('/api/dataforseo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'run_labs_full_production_test',
+          dateFrom: dateRange.from,
+          dateTo: dateRange.to
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ Labs full production test completed!', result.data);
+        setProductionTestResults(result.data);
+        alert(`🎉 Labs API Production Test Completed!\n\nProcessed ${result.data.keywordCount} keywords for ${result.data.players.length} players across ${result.data.markets.length} markets.\n\nActual cost: $${result.data.actualCost.toFixed(2)} (saved ~$16.86!)\n\nResults now displayed below!`);
+      } else {
+        throw new Error(result.error || 'Labs full production test failed');
+      }
+    } catch (error) {
+      console.error("❌ Labs full production test failed:", error);
+      alert("Labs full production test failed. Check console for details.");
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
   // Fetch data from DataForSEO
   const fetchDataFromAPI = async () => {
     setIsLoadingData(true);
@@ -302,6 +375,83 @@ export default function EnhancedDashboard() {
     });
     
     return csvContent;
+  };
+  
+  // Generate comprehensive raw data export (JSON format)
+  const generateRawDataJSON = (results: typeof microTestResults | typeof productionTestResults) => {
+    if (!results) return '';
+    
+    const rawData = {
+      metadata: {
+        testType: results.testType,
+        apiMode: results.apiMode,
+        timestamp: new Date().toISOString(),
+        dateRange: results.dateRange,
+        totalPlayers: results.players.length,
+        totalMarkets: results.markets.length,
+        totalKeywords: results.keywordCount,
+        totalRequests: (results as { totalRequests?: number }).totalRequests || 'N/A',
+        estimatedCost: results.estimatedCost,
+        actualCost: (results as { actualCost?: number }).actualCost || results.estimatedCost
+      },
+      markets: results.markets,
+      players: results.players,
+      rawApiResults: results.results
+    };
+    
+    return JSON.stringify(rawData, null, 2);
+  };
+  
+  // Generate detailed CSV with all keyword data
+  const generateDetailedCSV = (results: typeof microTestResults | typeof productionTestResults) => {
+    if (!results) return '';
+    
+    let csvContent = 'Market,Player Name,Keyword,Search Volume,Competition Level,CPC ($),Monthly Trend,API Mode,Date Range\n';
+    
+    Object.entries(results.results || {}).forEach(([market, keywords]) => {
+      keywords.forEach((kw) => {
+        // Extract player name from keyword
+        const playerMatch = kw.keyword.match(/^([A-Za-z\s]+?)\s+(shirt|jersey|signed|autograph|memorabilia|boots|cleats|card|poster|authentic|official|framed|ball|collectibles|signature|coins|exclusive|dedication|artwork|art|sports|soccer|football|limited|edition)/i);
+        const player = playerMatch ? playerMatch[1].trim() : 'Unknown Player';
+        
+        const monthlySearches = (kw as { monthly_searches?: Array<{month: number; search_volume: number}> }).monthly_searches;
+        const monthlyTrend = monthlySearches ? 
+          monthlySearches.slice(-3).map((m: {month: number; search_volume: number}) => m.search_volume).join(';') : 
+          'N/A';
+          
+        csvContent += `"${market}","${player}","${kw.keyword}",${kw.search_volume || 0},"${kw.competition || 'N/A'}",${kw.cpc || 0},"${monthlyTrend}","${results.apiMode || 'Unknown'}","${results.dateRange?.from || 'Current'} to ${results.dateRange?.to || 'Current'}"\n`;
+      });
+    });
+    
+    return csvContent;
+  };
+  
+  // Download raw data as JSON file
+  const downloadRawJSON = (results: typeof microTestResults | typeof productionTestResults, filename: string) => {
+    const jsonData = generateRawDataJSON(results);
+    const blob = new Blob([jsonData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+  
+  // Download detailed CSV
+  const downloadDetailedCSV = (results: typeof microTestResults | typeof productionTestResults, filename: string) => {
+    const csvData = generateDetailedCSV(results);
+    const blob = new Blob([csvData], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
   
   // Generate sample data for demonstration when API credits are exhausted
@@ -640,7 +790,7 @@ export default function EnhancedDashboard() {
                       </div>
                     </div>
                     <div className="text-xs text-blue-600 mt-1">
-                      Default: August 2025 (for executive report)
+                      Default: July 2025 (for executive report)
                     </div>
                   </div>
                   
@@ -678,6 +828,45 @@ export default function EnhancedDashboard() {
                       </div>
                     )}
                   </div>
+                  
+                  {/* DataForSEO Labs API - 90% Cheaper Option */}
+                  <div className="mt-4 p-3 rounded-md bg-green-50 border border-green-200">
+                    <div className="text-xs font-medium text-green-700 mb-2">💰 DataForSEO Labs API (90% CHEAPER!)</div>
+                    <div className="text-xs text-green-600 mb-3">
+                      Micro Test: 300 keywords = ~$0.03 (vs $0.10)<br/>
+                      Full Production: 18,750 keywords = ~$1.89 (vs $18.75)
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Button 
+                        className="w-full"
+                        variant="default"
+                        onClick={runLabsMicroTest}
+                        disabled={isLoadingData}
+                        style={{ backgroundColor: '#059669', color: 'white' }}
+                      >
+                        <Target className="h-4 w-4 mr-2" />
+                        💚 Run Labs Micro Test (~$0.03)
+                      </Button>
+                      
+                      <Button 
+                        className="w-full"
+                        variant="default"
+                        onClick={runLabsFullProductionTest}
+                        disabled={isLoadingData || sandboxMode}
+                        style={{ backgroundColor: '#047857', color: 'white' }}
+                      >
+                        <Rocket className="h-4 w-4 mr-2" />
+                        💚 Run Labs Full Production (~$1.89)
+                      </Button>
+                      
+                      {sandboxMode && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Switch to Live Mode to run Labs production test
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </>
               )}
             </div>
@@ -709,12 +898,12 @@ export default function EnhancedDashboard() {
                 </div>
                 
                 {/* Results Summary and Toggle */}
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 flex gap-2 flex-wrap">
                   <button
                     onClick={() => setShowDetailedResults(!showDetailedResults)}
                     className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
                   >
-                    {showDetailedResults ? '📊 Hide Full Report' : '📋 View Full Executive Report (All 160 Keywords)'}
+                    {showDetailedResults ? '📊 Hide Full Report' : '📋 View Full Executive Report'}
                   </button>
                   <button
                     onClick={() => {
@@ -723,7 +912,19 @@ export default function EnhancedDashboard() {
                     }}
                     className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
                   >
-                    📥 Download CSV Report
+                    📄 Basic CSV
+                  </button>
+                  <button
+                    onClick={() => downloadDetailedCSV(microTestResults, `Detailed-Report-${microTestResults.dateRange?.from || 'current'}.csv`)}
+                    className="px-3 py-1 bg-emerald-500 text-white text-xs rounded hover:bg-emerald-600"
+                  >
+                    📊 Detailed CSV
+                  </button>
+                  <button
+                    onClick={() => downloadRawJSON(microTestResults, `Raw-Data-${microTestResults.dateRange?.from || 'current'}.json`)}
+                    className="px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600"
+                  >
+                    🔧 Raw JSON Data
                   </button>
                 </div>
 
@@ -820,6 +1021,42 @@ export default function EnhancedDashboard() {
                       </div>
                     </div>
                   ))}
+                </div>
+                
+                {/* Production Test Export Options */}
+                <div className="mt-4 p-3 bg-white rounded border">
+                  <div className="text-sm font-medium text-red-800 mb-2">📥 Export Production Data</div>
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={() => downloadDetailedCSV(productionTestResults, `Production-Detailed-${productionTestResults.dateRange?.from || 'current'}.csv`)}
+                      className="px-3 py-1 bg-emerald-500 text-white text-xs rounded hover:bg-emerald-600"
+                    >
+                      📊 Full CSV Report
+                    </button>
+                    <button
+                      onClick={() => downloadRawJSON(productionTestResults, `Production-Raw-Data-${productionTestResults.dateRange?.from || 'current'}.json`)}
+                      className="px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600"
+                    >
+                      🔧 Complete Raw JSON
+                    </button>
+                    <button
+                      onClick={() => {
+                        // Open raw data in new window for viewing
+                        const rawData = generateRawDataJSON(productionTestResults);
+                        const newWindow = window.open('', '_blank');
+                        if (newWindow) {
+                          newWindow.document.write(`<html><head><title>Raw API Data</title></head><body><pre>${rawData}</pre></body></html>`);
+                          newWindow.document.close();
+                        }
+                      }}
+                      className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                    >
+                      👁️ View Raw Data
+                    </button>
+                  </div>
+                  <div className="text-xs text-gray-600 mt-2">
+                    Raw JSON includes all API response data, metadata, timestamps, and request details
+                  </div>
                 </div>
                 
                 <button 
@@ -990,6 +1227,7 @@ export default function EnhancedDashboard() {
               <TabsTrigger value="overview">📈 Overview</TabsTrigger>
               <TabsTrigger value="data">📊 Total Player Data</TabsTrigger>
               <TabsTrigger value="analytics">👤 Individual Player Data</TabsTrigger>
+              <TabsTrigger value="analysis">📋 API Data Analysis</TabsTrigger>
               <TabsTrigger value="heatmap">🌍 Heatmap</TabsTrigger>
               <TabsTrigger value="comparisons">⚖️ Comparisons</TabsTrigger>
               <TabsTrigger value="opportunities">🎯 Opportunities</TabsTrigger>
@@ -1533,6 +1771,206 @@ export default function EnhancedDashboard() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            {/* API Data Analysis Tab */}
+            <TabsContent value="analysis" className="space-y-6">
+              {(microTestResults || productionTestResults) ? (
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>📋 API Test Results Analysis</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {/* Display data for whichever test results we have */}
+                      {productionTestResults && (
+                        <div className="space-y-4">
+                          <div className="bg-red-50 p-4 rounded-lg">
+                            <h3 className="font-bold text-red-800 mb-2">🚀 Full Production Test Results</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                              <div><strong>Players:</strong> {productionTestResults.players.length}</div>
+                              <div><strong>Markets:</strong> {productionTestResults.markets.length}</div>
+                              <div><strong>Total Keywords:</strong> {productionTestResults.keywordCount?.toLocaleString()}</div>
+                              <div><strong>API Cost:</strong> ${(productionTestResults as { actualCost?: number }).actualCost?.toFixed(2) || productionTestResults.estimatedCost?.toFixed(2)}</div>
+                            </div>
+                          </div>
+                          
+                          {/* Market-by-Market Analysis Table */}
+                          <div>
+                            <h4 className="font-semibold mb-3">Market Analysis</h4>
+                            <div className="overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Market</TableHead>
+                                    <TableHead className="text-right">Keywords with Data</TableHead>
+                                    <TableHead className="text-right">Avg Search Volume</TableHead>
+                                    <TableHead className="text-right">Top Keyword</TableHead>
+                                    <TableHead className="text-right">Top Volume</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {Object.entries(productionTestResults.results || {}).map(([market, keywords]) => {
+                                    const avgVolume = keywords.length > 0 ? 
+                                      keywords.reduce((sum, kw) => sum + (kw.search_volume || 0), 0) / keywords.length : 0;
+                                    const topKeyword = keywords.length > 0 ? 
+                                      keywords.sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))[0] : null;
+                                    return (
+                                      <TableRow key={market}>
+                                        <TableCell className="font-medium">{market}</TableCell>
+                                        <TableCell className="text-right">{keywords.length}</TableCell>
+                                        <TableCell className="text-right">{avgVolume.toLocaleString()}</TableCell>
+                                        <TableCell className="text-right text-xs">{topKeyword ? `"${topKeyword.keyword}"` : 'N/A'}</TableCell>
+                                        <TableCell className="text-right font-semibold text-green-600">
+                                          {topKeyword ? (topKeyword.search_volume || 0).toLocaleString() : '0'}
+                                        </TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {microTestResults && !productionTestResults && (
+                        <div className="space-y-4">
+                          <div className="bg-green-50 p-4 rounded-lg">
+                            <h3 className="font-bold text-green-800 mb-2">🧪 Micro Test Results</h3>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                              <div><strong>Players:</strong> {microTestResults.players.length}</div>
+                              <div><strong>Markets:</strong> {microTestResults.markets.length}</div>
+                              <div><strong>Keywords:</strong> {microTestResults.keywordCount}</div>
+                              <div><strong>Cost:</strong> ${(microTestResults as { actualCost?: number }).actualCost?.toFixed(3) || microTestResults.estimatedCost.toFixed(3)}</div>
+                            </div>
+                          </div>
+                          
+                          {/* Micro Test Market Analysis */}
+                          <div>
+                            <h4 className="font-semibold mb-3">Market Analysis</h4>
+                            <div className="overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Market</TableHead>
+                                    <TableHead className="text-right">Keywords with Data</TableHead>
+                                    <TableHead className="text-right">Avg Search Volume</TableHead>
+                                    <TableHead className="text-right">Top Keyword</TableHead>
+                                    <TableHead className="text-right">Top Volume</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {Object.entries(microTestResults.results || {}).map(([market, keywords]) => {
+                                    const avgVolume = keywords.length > 0 ? 
+                                      keywords.reduce((sum, kw) => sum + (kw.search_volume || 0), 0) / keywords.length : 0;
+                                    const topKeyword = keywords.length > 0 ? 
+                                      keywords.sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))[0] : null;
+                                    return (
+                                      <TableRow key={market}>
+                                        <TableCell className="font-medium">{market}</TableCell>
+                                        <TableCell className="text-right">{keywords.length}</TableCell>
+                                        <TableCell className="text-right">{avgVolume.toLocaleString()}</TableCell>
+                                        <TableCell className="text-right text-xs">{topKeyword ? `"${topKeyword.keyword}"` : 'N/A'}</TableCell>
+                                        <TableCell className="text-right font-semibold text-green-600">
+                                          {topKeyword ? (topKeyword.search_volume || 0).toLocaleString() : '0'}
+                                        </TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                  
+                  {/* Cost Analysis & Recommendations */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>💰 Cost Analysis & API Recommendations</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <h4 className="font-semibold">Cost Breakdown</h4>
+                          {productionTestResults && (
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span>Total API Requests:</span>
+                                <span className="font-mono">{productionTestResults.totalRequests}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Cost per Request:</span>
+                                <span className="font-mono">$0.0101</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Total Cost:</span>
+                                <span className="font-mono font-bold text-green-600">${((productionTestResults as { actualCost?: number }).actualCost || productionTestResults.estimatedCost).toFixed(2)}</span>
+                              </div>
+                              <div className="flex justify-between text-gray-600">
+                                <span>Google Ads API would cost:</span>
+                                <span className="font-mono line-through">$18.75</span>
+                              </div>
+                              <div className="flex justify-between font-bold text-green-600">
+                                <span>Savings with Labs API:</span>
+                                <span className="font-mono">~$16.86 (90%)</span>
+                              </div>
+                            </div>
+                          )}
+                          {microTestResults && !productionTestResults && (
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span>Keywords Tested:</span>
+                                <span className="font-mono">{microTestResults.keywordCount}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Cost per Keyword:</span>
+                                <span className="font-mono">$0.0101</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Total Cost:</span>
+                                <span className="font-mono font-bold text-green-600">${((microTestResults as { actualCost?: number }).actualCost || microTestResults.estimatedCost).toFixed(3)}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <h4 className="font-semibold">Recommendations</h4>
+                          <div className="space-y-3 text-sm">
+                            <div className="p-3 bg-green-50 rounded-lg">
+                              <div className="font-medium text-green-800">✅ DataForSEO Labs API</div>
+                              <div className="text-green-700">90% cheaper than Google Ads API with same data quality</div>
+                            </div>
+                            <div className="p-3 bg-blue-50 rounded-lg">
+                              <div className="font-medium text-blue-800">📊 July 2025 Data</div>
+                              <div className="text-blue-700">Current date range optimized for executive reporting</div>
+                            </div>
+                            <div className="p-3 bg-purple-50 rounded-lg">
+                              <div className="font-medium text-purple-800">🔧 Raw Data Access</div>
+                              <div className="text-purple-700">Complete API responses available for external analysis</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <div className="text-gray-400 mb-4">
+                      <BarChart3 className="h-16 w-16 mx-auto mb-4" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">No API Test Results Yet</h3>
+                    <p className="text-gray-500 mb-4">Run a micro test or full production test to see detailed API data analysis here.</p>
+                    <p className="text-sm text-gray-400">This tab will show comprehensive analysis of your API test results, including cost breakdowns, market analysis, and data interpretation.</p>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
 
             {/* Heatmap Tab */}

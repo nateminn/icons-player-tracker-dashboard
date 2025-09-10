@@ -84,9 +84,35 @@ export async function POST(request: NextRequest) {
           data: productionResults
         });
 
+      case 'run_labs_micro_test':
+        // Import the DataForSEO Labs service (90% cheaper)
+        const { dataForSEOLabsService } = await import('@/lib/dataforseo-labs-service');
+        
+        const { dateFrom: labsDateFrom, dateTo: labsDateTo, useSandbox: labsUseSandbox } = params;
+        const labsMicroResults = await dataForSEOLabsService.runMicroTest(labsDateFrom, labsDateTo, labsUseSandbox);
+        
+        return NextResponse.json({
+          success: true,
+          message: `Labs API micro test completed successfully - cost: $${labsMicroResults.actualCost.toFixed(3)}`,
+          data: labsMicroResults
+        });
+
+      case 'run_labs_full_production_test':
+        // Import the DataForSEO Labs service for full production run (90% cheaper)
+        const { dataForSEOLabsService: labsProdService } = await import('@/lib/dataforseo-labs-service');
+        
+        const { dateFrom: labsProdDateFrom, dateTo: labsProdDateTo } = params;
+        const labsProductionResults = await labsProdService.runFullProductionTest(labsProdDateFrom, labsProdDateTo);
+        
+        return NextResponse.json({
+          success: true,
+          message: `Labs API production test completed successfully - cost: $${labsProductionResults.actualCost.toFixed(2)} (saved ~$16.86!)`,
+          data: labsProductionResults
+        });
+
       default:
         return NextResponse.json(
-          { error: 'Invalid action. Use: search_volume, player_data, test_connection, or run_micro_test' },
+          { error: 'Invalid action. Use: search_volume, player_data, test_connection, run_micro_test, run_labs_micro_test, or run_labs_full_production_test' },
           { status: 400 }
         );
     }
