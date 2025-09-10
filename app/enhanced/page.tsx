@@ -17,6 +17,7 @@ import {
   TrendingDown, Users, Globe, Target, BarChart3, Rocket 
 } from "lucide-react";
 import { generateEnhancedPlayerData, marketsList } from '@/lib/market-data-generator';
+import { loadStoredAPIResults, transformAPIToDashboard } from '@/lib/api-data-transformer';
 
 // Dynamic import for Plotly to avoid SSR issues
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
@@ -533,6 +534,50 @@ export default function EnhancedDashboard() {
     }
   };
 
+  // Load real API data
+  const loadRealAPIData = async () => {
+    try {
+      setIsLoadingData(true);
+      console.log('Loading real API data from storage...');
+      
+      const apiResults = await loadStoredAPIResults();
+      console.log(`Found ${apiResults.length} stored API results`);
+      
+      if (apiResults.length === 0) {
+        alert('No API data found. Please run a micro test first to generate data.');
+        return;
+      }
+      
+      const dashboardData = transformAPIToDashboard(apiResults);
+      console.log(`Transformed to ${dashboardData.length} player records`);
+      
+      if (dashboardData.length > 0) {
+        setPlayers(dashboardData);
+        setDataSource("dataforseo");
+        
+        // Update available markets based on real data
+        const realMarkets = [...new Set(dashboardData.flatMap(p => p.markets.map(m => m.market)))];
+        setSelectedMarkets(realMarkets.slice(0, 4)); // Select first 4 markets
+        
+        // Reset volume range based on real data
+        const realVolumes = dashboardData.map(p => p.total_volume).filter(vol => vol > 0);
+        if (realVolumes.length > 0) {
+          setVolumeRange([Math.min(...realVolumes), Math.max(...realVolumes)]);
+        }
+        
+        console.log('✅ Successfully loaded real API data into dashboard');
+        alert(`Loaded ${dashboardData.length} players from real API data!\n\nMarkets: ${realMarkets.join(', ')}\nTotal players: ${dashboardData.length}`);
+      } else {
+        alert('No player data could be extracted from API results. Data may need processing.');
+      }
+    } catch (error) {
+      console.error('Failed to load real API data:', error);
+      alert('Failed to load real API data. Check console for details.');
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
@@ -729,6 +774,16 @@ export default function EnhancedDashboard() {
               >
                 <RefreshCcw className="h-4 w-4 mr-2" />
                 Load Sample Data
+              </Button>
+              
+              <Button 
+                className="w-full" 
+                variant={dataSource === "dataforseo" ? "default" : "outline"}
+                onClick={loadRealAPIData}
+                disabled={isLoadingData}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Load Stored API Data
               </Button>
               
               <Button 
