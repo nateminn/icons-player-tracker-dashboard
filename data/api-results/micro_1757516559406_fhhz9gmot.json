@@ -1,0 +1,1799 @@
+{
+  "id": "micro_1757516559406_fhhz9gmot",
+  "timestamp": "2025-09-10T15:02:39.406Z",
+  "testType": "micro",
+  "source": "Google Ads API",
+  "metadata": {
+    "players": [
+      "Federico Valverde",
+      "Thibaut Courtois",
+      "Dean Huijsen",
+      "Arda Guler",
+      "Pedri"
+    ],
+    "markets": [
+      "United States",
+      "United Kingdom"
+    ],
+    "keywordCount": 150,
+    "actualCost": 0,
+    "dateRange": {
+      "from": "2024-07-01",
+      "to": "2025-07-01"
+    },
+    "apiMode": "Sandbox"
+  },
+  "rawApiData": {
+    "tasks": [
+      {
+        "result": {
+          "United States": [
+            {
+              "keyword": "seo",
+              "spell": null,
+              "location_code": 2840,
+              "language_code": "en",
+              "search_partners": false,
+              "competition": "LOW",
+              "competition_index": 18,
+              "search_volume": 135000,
+              "low_top_of_page_bid": 4.11,
+              "high_top_of_page_bid": 16.5,
+              "cpc": 18.6,
+              "monthly_searches": [
+                {
+                  "year": 2025,
+                  "month": 7,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2025,
+                  "month": 6,
+                  "search_volume": 165000
+                },
+                {
+                  "year": 2025,
+                  "month": 5,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2025,
+                  "month": 4,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2025,
+                  "month": 3,
+                  "search_volume": 201000
+                },
+                {
+                  "year": 2025,
+                  "month": 2,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2025,
+                  "month": 1,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2024,
+                  "month": 12,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2024,
+                  "month": 11,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2024,
+                  "month": 10,
+                  "search_volume": 110000
+                },
+                {
+                  "year": 2024,
+                  "month": 9,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2024,
+                  "month": 8,
+                  "search_volume": 110000
+                }
+              ]
+            },
+            {
+              "keyword": "phone",
+              "spell": null,
+              "location_code": 2840,
+              "language_code": "en",
+              "search_partners": false,
+              "competition": "HIGH",
+              "competition_index": 100,
+              "search_volume": 450000,
+              "low_top_of_page_bid": 2.84,
+              "high_top_of_page_bid": 8.98,
+              "cpc": 4.37,
+              "monthly_searches": [
+                {
+                  "year": 2025,
+                  "month": 7,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 6,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 5,
+                  "search_volume": 550000
+                },
+                {
+                  "year": 2025,
+                  "month": 4,
+                  "search_volume": 550000
+                },
+                {
+                  "year": 2025,
+                  "month": 3,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 2,
+                  "search_volume": 368000
+                },
+                {
+                  "year": 2025,
+                  "month": 1,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 12,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 11,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 10,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 9,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 8,
+                  "search_volume": 450000
+                }
+              ]
+            },
+            {
+              "keyword": "lkjhgfvbnm",
+              "spell": null,
+              "location_code": 2840,
+              "language_code": "en",
+              "search_partners": false,
+              "competition": "LOW",
+              "competition_index": 0,
+              "search_volume": 10,
+              "low_top_of_page_bid": null,
+              "high_top_of_page_bid": null,
+              "cpc": null,
+              "monthly_searches": [
+                {
+                  "year": 2025,
+                  "month": 7,
+                  "search_volume": 10
+                },
+                {
+                  "year": 2025,
+                  "month": 6,
+                  "search_volume": 0
+                },
+                {
+                  "year": 2025,
+                  "month": 5,
+                  "search_volume": 10
+                },
+                {
+                  "year": 2025,
+                  "month": 4,
+                  "search_volume": 0
+                },
+                {
+                  "year": 2025,
+                  "month": 3,
+                  "search_volume": 10
+                },
+                {
+                  "year": 2025,
+                  "month": 2,
+                  "search_volume": 0
+                },
+                {
+                  "year": 2025,
+                  "month": 1,
+                  "search_volume": 0
+                },
+                {
+                  "year": 2024,
+                  "month": 12,
+                  "search_volume": 10
+                },
+                {
+                  "year": 2024,
+                  "month": 11,
+                  "search_volume": 0
+                },
+                {
+                  "year": 2024,
+                  "month": 10,
+                  "search_volume": 10
+                },
+                {
+                  "year": 2024,
+                  "month": 9,
+                  "search_volume": 10
+                },
+                {
+                  "year": 2024,
+                  "month": 8,
+                  "search_volume": 10
+                }
+              ]
+            },
+            {
+              "keyword": "watch",
+              "spell": null,
+              "location_code": 2840,
+              "language_code": "en",
+              "search_partners": false,
+              "competition": "HIGH",
+              "competition_index": 100,
+              "search_volume": 450000,
+              "low_top_of_page_bid": 0.7,
+              "high_top_of_page_bid": 6.83,
+              "cpc": 1.3,
+              "monthly_searches": [
+                {
+                  "year": 2025,
+                  "month": 7,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 6,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 5,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 4,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 3,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 2,
+                  "search_volume": 368000
+                },
+                {
+                  "year": 2025,
+                  "month": 1,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 12,
+                  "search_volume": 550000
+                },
+                {
+                  "year": 2024,
+                  "month": 11,
+                  "search_volume": 550000
+                },
+                {
+                  "year": 2024,
+                  "month": 10,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 9,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 8,
+                  "search_volume": 450000
+                }
+              ]
+            }
+          ],
+          "United Kingdom": [
+            {
+              "keyword": "seo",
+              "spell": null,
+              "location_code": 2840,
+              "language_code": "en",
+              "search_partners": false,
+              "competition": "LOW",
+              "competition_index": 18,
+              "search_volume": 135000,
+              "low_top_of_page_bid": 4.11,
+              "high_top_of_page_bid": 16.5,
+              "cpc": 18.6,
+              "monthly_searches": [
+                {
+                  "year": 2025,
+                  "month": 7,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2025,
+                  "month": 6,
+                  "search_volume": 165000
+                },
+                {
+                  "year": 2025,
+                  "month": 5,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2025,
+                  "month": 4,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2025,
+                  "month": 3,
+                  "search_volume": 201000
+                },
+                {
+                  "year": 2025,
+                  "month": 2,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2025,
+                  "month": 1,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2024,
+                  "month": 12,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2024,
+                  "month": 11,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2024,
+                  "month": 10,
+                  "search_volume": 110000
+                },
+                {
+                  "year": 2024,
+                  "month": 9,
+                  "search_volume": 135000
+                },
+                {
+                  "year": 2024,
+                  "month": 8,
+                  "search_volume": 110000
+                }
+              ]
+            },
+            {
+              "keyword": "phone",
+              "spell": null,
+              "location_code": 2840,
+              "language_code": "en",
+              "search_partners": false,
+              "competition": "HIGH",
+              "competition_index": 100,
+              "search_volume": 450000,
+              "low_top_of_page_bid": 2.84,
+              "high_top_of_page_bid": 8.98,
+              "cpc": 4.37,
+              "monthly_searches": [
+                {
+                  "year": 2025,
+                  "month": 7,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 6,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 5,
+                  "search_volume": 550000
+                },
+                {
+                  "year": 2025,
+                  "month": 4,
+                  "search_volume": 550000
+                },
+                {
+                  "year": 2025,
+                  "month": 3,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 2,
+                  "search_volume": 368000
+                },
+                {
+                  "year": 2025,
+                  "month": 1,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 12,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 11,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 10,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 9,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 8,
+                  "search_volume": 450000
+                }
+              ]
+            },
+            {
+              "keyword": "lkjhgfvbnm",
+              "spell": null,
+              "location_code": 2840,
+              "language_code": "en",
+              "search_partners": false,
+              "competition": "LOW",
+              "competition_index": 0,
+              "search_volume": 10,
+              "low_top_of_page_bid": null,
+              "high_top_of_page_bid": null,
+              "cpc": null,
+              "monthly_searches": [
+                {
+                  "year": 2025,
+                  "month": 7,
+                  "search_volume": 10
+                },
+                {
+                  "year": 2025,
+                  "month": 6,
+                  "search_volume": 0
+                },
+                {
+                  "year": 2025,
+                  "month": 5,
+                  "search_volume": 10
+                },
+                {
+                  "year": 2025,
+                  "month": 4,
+                  "search_volume": 0
+                },
+                {
+                  "year": 2025,
+                  "month": 3,
+                  "search_volume": 10
+                },
+                {
+                  "year": 2025,
+                  "month": 2,
+                  "search_volume": 0
+                },
+                {
+                  "year": 2025,
+                  "month": 1,
+                  "search_volume": 0
+                },
+                {
+                  "year": 2024,
+                  "month": 12,
+                  "search_volume": 10
+                },
+                {
+                  "year": 2024,
+                  "month": 11,
+                  "search_volume": 0
+                },
+                {
+                  "year": 2024,
+                  "month": 10,
+                  "search_volume": 10
+                },
+                {
+                  "year": 2024,
+                  "month": 9,
+                  "search_volume": 10
+                },
+                {
+                  "year": 2024,
+                  "month": 8,
+                  "search_volume": 10
+                }
+              ]
+            },
+            {
+              "keyword": "watch",
+              "spell": null,
+              "location_code": 2840,
+              "language_code": "en",
+              "search_partners": false,
+              "competition": "HIGH",
+              "competition_index": 100,
+              "search_volume": 450000,
+              "low_top_of_page_bid": 0.7,
+              "high_top_of_page_bid": 6.83,
+              "cpc": 1.3,
+              "monthly_searches": [
+                {
+                  "year": 2025,
+                  "month": 7,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 6,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 5,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 4,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 3,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2025,
+                  "month": 2,
+                  "search_volume": 368000
+                },
+                {
+                  "year": 2025,
+                  "month": 1,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 12,
+                  "search_volume": 550000
+                },
+                {
+                  "year": 2024,
+                  "month": 11,
+                  "search_volume": 550000
+                },
+                {
+                  "year": 2024,
+                  "month": 10,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 9,
+                  "search_volume": 450000
+                },
+                {
+                  "year": 2024,
+                  "month": 8,
+                  "search_volume": 450000
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "processedResults": {
+    "testType": "micro",
+    "players": [
+      "Federico Valverde",
+      "Thibaut Courtois",
+      "Dean Huijsen",
+      "Arda Guler",
+      "Pedri"
+    ],
+    "markets": [
+      "United States",
+      "United Kingdom"
+    ],
+    "keywordCount": 150,
+    "estimatedCost": 0.05,
+    "dateRange": {
+      "from": "2024-07-01",
+      "to": "2025-07-01"
+    },
+    "apiMode": "Sandbox",
+    "results": {
+      "United States": [
+        {
+          "keyword": "seo",
+          "spell": null,
+          "location_code": 2840,
+          "language_code": "en",
+          "search_partners": false,
+          "competition": "LOW",
+          "competition_index": 18,
+          "search_volume": 135000,
+          "low_top_of_page_bid": 4.11,
+          "high_top_of_page_bid": 16.5,
+          "cpc": 18.6,
+          "monthly_searches": [
+            {
+              "year": 2025,
+              "month": 7,
+              "search_volume": 135000
+            },
+            {
+              "year": 2025,
+              "month": 6,
+              "search_volume": 165000
+            },
+            {
+              "year": 2025,
+              "month": 5,
+              "search_volume": 135000
+            },
+            {
+              "year": 2025,
+              "month": 4,
+              "search_volume": 135000
+            },
+            {
+              "year": 2025,
+              "month": 3,
+              "search_volume": 201000
+            },
+            {
+              "year": 2025,
+              "month": 2,
+              "search_volume": 135000
+            },
+            {
+              "year": 2025,
+              "month": 1,
+              "search_volume": 135000
+            },
+            {
+              "year": 2024,
+              "month": 12,
+              "search_volume": 135000
+            },
+            {
+              "year": 2024,
+              "month": 11,
+              "search_volume": 135000
+            },
+            {
+              "year": 2024,
+              "month": 10,
+              "search_volume": 110000
+            },
+            {
+              "year": 2024,
+              "month": 9,
+              "search_volume": 135000
+            },
+            {
+              "year": 2024,
+              "month": 8,
+              "search_volume": 110000
+            }
+          ]
+        },
+        {
+          "keyword": "phone",
+          "spell": null,
+          "location_code": 2840,
+          "language_code": "en",
+          "search_partners": false,
+          "competition": "HIGH",
+          "competition_index": 100,
+          "search_volume": 450000,
+          "low_top_of_page_bid": 2.84,
+          "high_top_of_page_bid": 8.98,
+          "cpc": 4.37,
+          "monthly_searches": [
+            {
+              "year": 2025,
+              "month": 7,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 6,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 5,
+              "search_volume": 550000
+            },
+            {
+              "year": 2025,
+              "month": 4,
+              "search_volume": 550000
+            },
+            {
+              "year": 2025,
+              "month": 3,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 2,
+              "search_volume": 368000
+            },
+            {
+              "year": 2025,
+              "month": 1,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 12,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 11,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 10,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 9,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 8,
+              "search_volume": 450000
+            }
+          ]
+        },
+        {
+          "keyword": "lkjhgfvbnm",
+          "spell": null,
+          "location_code": 2840,
+          "language_code": "en",
+          "search_partners": false,
+          "competition": "LOW",
+          "competition_index": 0,
+          "search_volume": 10,
+          "low_top_of_page_bid": null,
+          "high_top_of_page_bid": null,
+          "cpc": null,
+          "monthly_searches": [
+            {
+              "year": 2025,
+              "month": 7,
+              "search_volume": 10
+            },
+            {
+              "year": 2025,
+              "month": 6,
+              "search_volume": 0
+            },
+            {
+              "year": 2025,
+              "month": 5,
+              "search_volume": 10
+            },
+            {
+              "year": 2025,
+              "month": 4,
+              "search_volume": 0
+            },
+            {
+              "year": 2025,
+              "month": 3,
+              "search_volume": 10
+            },
+            {
+              "year": 2025,
+              "month": 2,
+              "search_volume": 0
+            },
+            {
+              "year": 2025,
+              "month": 1,
+              "search_volume": 0
+            },
+            {
+              "year": 2024,
+              "month": 12,
+              "search_volume": 10
+            },
+            {
+              "year": 2024,
+              "month": 11,
+              "search_volume": 0
+            },
+            {
+              "year": 2024,
+              "month": 10,
+              "search_volume": 10
+            },
+            {
+              "year": 2024,
+              "month": 9,
+              "search_volume": 10
+            },
+            {
+              "year": 2024,
+              "month": 8,
+              "search_volume": 10
+            }
+          ]
+        },
+        {
+          "keyword": "watch",
+          "spell": null,
+          "location_code": 2840,
+          "language_code": "en",
+          "search_partners": false,
+          "competition": "HIGH",
+          "competition_index": 100,
+          "search_volume": 450000,
+          "low_top_of_page_bid": 0.7,
+          "high_top_of_page_bid": 6.83,
+          "cpc": 1.3,
+          "monthly_searches": [
+            {
+              "year": 2025,
+              "month": 7,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 6,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 5,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 4,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 3,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 2,
+              "search_volume": 368000
+            },
+            {
+              "year": 2025,
+              "month": 1,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 12,
+              "search_volume": 550000
+            },
+            {
+              "year": 2024,
+              "month": 11,
+              "search_volume": 550000
+            },
+            {
+              "year": 2024,
+              "month": 10,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 9,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 8,
+              "search_volume": 450000
+            }
+          ]
+        }
+      ],
+      "United Kingdom": [
+        {
+          "keyword": "seo",
+          "spell": null,
+          "location_code": 2840,
+          "language_code": "en",
+          "search_partners": false,
+          "competition": "LOW",
+          "competition_index": 18,
+          "search_volume": 135000,
+          "low_top_of_page_bid": 4.11,
+          "high_top_of_page_bid": 16.5,
+          "cpc": 18.6,
+          "monthly_searches": [
+            {
+              "year": 2025,
+              "month": 7,
+              "search_volume": 135000
+            },
+            {
+              "year": 2025,
+              "month": 6,
+              "search_volume": 165000
+            },
+            {
+              "year": 2025,
+              "month": 5,
+              "search_volume": 135000
+            },
+            {
+              "year": 2025,
+              "month": 4,
+              "search_volume": 135000
+            },
+            {
+              "year": 2025,
+              "month": 3,
+              "search_volume": 201000
+            },
+            {
+              "year": 2025,
+              "month": 2,
+              "search_volume": 135000
+            },
+            {
+              "year": 2025,
+              "month": 1,
+              "search_volume": 135000
+            },
+            {
+              "year": 2024,
+              "month": 12,
+              "search_volume": 135000
+            },
+            {
+              "year": 2024,
+              "month": 11,
+              "search_volume": 135000
+            },
+            {
+              "year": 2024,
+              "month": 10,
+              "search_volume": 110000
+            },
+            {
+              "year": 2024,
+              "month": 9,
+              "search_volume": 135000
+            },
+            {
+              "year": 2024,
+              "month": 8,
+              "search_volume": 110000
+            }
+          ]
+        },
+        {
+          "keyword": "phone",
+          "spell": null,
+          "location_code": 2840,
+          "language_code": "en",
+          "search_partners": false,
+          "competition": "HIGH",
+          "competition_index": 100,
+          "search_volume": 450000,
+          "low_top_of_page_bid": 2.84,
+          "high_top_of_page_bid": 8.98,
+          "cpc": 4.37,
+          "monthly_searches": [
+            {
+              "year": 2025,
+              "month": 7,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 6,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 5,
+              "search_volume": 550000
+            },
+            {
+              "year": 2025,
+              "month": 4,
+              "search_volume": 550000
+            },
+            {
+              "year": 2025,
+              "month": 3,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 2,
+              "search_volume": 368000
+            },
+            {
+              "year": 2025,
+              "month": 1,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 12,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 11,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 10,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 9,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 8,
+              "search_volume": 450000
+            }
+          ]
+        },
+        {
+          "keyword": "lkjhgfvbnm",
+          "spell": null,
+          "location_code": 2840,
+          "language_code": "en",
+          "search_partners": false,
+          "competition": "LOW",
+          "competition_index": 0,
+          "search_volume": 10,
+          "low_top_of_page_bid": null,
+          "high_top_of_page_bid": null,
+          "cpc": null,
+          "monthly_searches": [
+            {
+              "year": 2025,
+              "month": 7,
+              "search_volume": 10
+            },
+            {
+              "year": 2025,
+              "month": 6,
+              "search_volume": 0
+            },
+            {
+              "year": 2025,
+              "month": 5,
+              "search_volume": 10
+            },
+            {
+              "year": 2025,
+              "month": 4,
+              "search_volume": 0
+            },
+            {
+              "year": 2025,
+              "month": 3,
+              "search_volume": 10
+            },
+            {
+              "year": 2025,
+              "month": 2,
+              "search_volume": 0
+            },
+            {
+              "year": 2025,
+              "month": 1,
+              "search_volume": 0
+            },
+            {
+              "year": 2024,
+              "month": 12,
+              "search_volume": 10
+            },
+            {
+              "year": 2024,
+              "month": 11,
+              "search_volume": 0
+            },
+            {
+              "year": 2024,
+              "month": 10,
+              "search_volume": 10
+            },
+            {
+              "year": 2024,
+              "month": 9,
+              "search_volume": 10
+            },
+            {
+              "year": 2024,
+              "month": 8,
+              "search_volume": 10
+            }
+          ]
+        },
+        {
+          "keyword": "watch",
+          "spell": null,
+          "location_code": 2840,
+          "language_code": "en",
+          "search_partners": false,
+          "competition": "HIGH",
+          "competition_index": 100,
+          "search_volume": 450000,
+          "low_top_of_page_bid": 0.7,
+          "high_top_of_page_bid": 6.83,
+          "cpc": 1.3,
+          "monthly_searches": [
+            {
+              "year": 2025,
+              "month": 7,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 6,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 5,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 4,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 3,
+              "search_volume": 450000
+            },
+            {
+              "year": 2025,
+              "month": 2,
+              "search_volume": 368000
+            },
+            {
+              "year": 2025,
+              "month": 1,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 12,
+              "search_volume": 550000
+            },
+            {
+              "year": 2024,
+              "month": 11,
+              "search_volume": 550000
+            },
+            {
+              "year": 2024,
+              "month": 10,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 9,
+              "search_volume": 450000
+            },
+            {
+              "year": 2024,
+              "month": 8,
+              "search_volume": 450000
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "monthlyData": {
+    "United States": [
+      {
+        "keyword": "seo",
+        "player": "Unknown",
+        "monthlyBreakdown": [
+          {
+            "year": 2025,
+            "month": 7,
+            "search_volume": 135000
+          },
+          {
+            "year": 2025,
+            "month": 6,
+            "search_volume": 165000
+          },
+          {
+            "year": 2025,
+            "month": 5,
+            "search_volume": 135000
+          },
+          {
+            "year": 2025,
+            "month": 4,
+            "search_volume": 135000
+          },
+          {
+            "year": 2025,
+            "month": 3,
+            "search_volume": 201000
+          },
+          {
+            "year": 2025,
+            "month": 2,
+            "search_volume": 135000
+          },
+          {
+            "year": 2025,
+            "month": 1,
+            "search_volume": 135000
+          },
+          {
+            "year": 2024,
+            "month": 12,
+            "search_volume": 135000
+          },
+          {
+            "year": 2024,
+            "month": 11,
+            "search_volume": 135000
+          },
+          {
+            "year": 2024,
+            "month": 10,
+            "search_volume": 110000
+          },
+          {
+            "year": 2024,
+            "month": 9,
+            "search_volume": 135000
+          },
+          {
+            "year": 2024,
+            "month": 8,
+            "search_volume": 110000
+          }
+        ]
+      },
+      {
+        "keyword": "phone",
+        "player": "Unknown",
+        "monthlyBreakdown": [
+          {
+            "year": 2025,
+            "month": 7,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 6,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 5,
+            "search_volume": 550000
+          },
+          {
+            "year": 2025,
+            "month": 4,
+            "search_volume": 550000
+          },
+          {
+            "year": 2025,
+            "month": 3,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 2,
+            "search_volume": 368000
+          },
+          {
+            "year": 2025,
+            "month": 1,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 12,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 11,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 10,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 9,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 8,
+            "search_volume": 450000
+          }
+        ]
+      },
+      {
+        "keyword": "lkjhgfvbnm",
+        "player": "Unknown",
+        "monthlyBreakdown": [
+          {
+            "year": 2025,
+            "month": 7,
+            "search_volume": 10
+          },
+          {
+            "year": 2025,
+            "month": 6,
+            "search_volume": 0
+          },
+          {
+            "year": 2025,
+            "month": 5,
+            "search_volume": 10
+          },
+          {
+            "year": 2025,
+            "month": 4,
+            "search_volume": 0
+          },
+          {
+            "year": 2025,
+            "month": 3,
+            "search_volume": 10
+          },
+          {
+            "year": 2025,
+            "month": 2,
+            "search_volume": 0
+          },
+          {
+            "year": 2025,
+            "month": 1,
+            "search_volume": 0
+          },
+          {
+            "year": 2024,
+            "month": 12,
+            "search_volume": 10
+          },
+          {
+            "year": 2024,
+            "month": 11,
+            "search_volume": 0
+          },
+          {
+            "year": 2024,
+            "month": 10,
+            "search_volume": 10
+          },
+          {
+            "year": 2024,
+            "month": 9,
+            "search_volume": 10
+          },
+          {
+            "year": 2024,
+            "month": 8,
+            "search_volume": 10
+          }
+        ]
+      },
+      {
+        "keyword": "watch",
+        "player": "Unknown",
+        "monthlyBreakdown": [
+          {
+            "year": 2025,
+            "month": 7,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 6,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 5,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 4,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 3,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 2,
+            "search_volume": 368000
+          },
+          {
+            "year": 2025,
+            "month": 1,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 12,
+            "search_volume": 550000
+          },
+          {
+            "year": 2024,
+            "month": 11,
+            "search_volume": 550000
+          },
+          {
+            "year": 2024,
+            "month": 10,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 9,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 8,
+            "search_volume": 450000
+          }
+        ]
+      }
+    ],
+    "United Kingdom": [
+      {
+        "keyword": "seo",
+        "player": "Unknown",
+        "monthlyBreakdown": [
+          {
+            "year": 2025,
+            "month": 7,
+            "search_volume": 135000
+          },
+          {
+            "year": 2025,
+            "month": 6,
+            "search_volume": 165000
+          },
+          {
+            "year": 2025,
+            "month": 5,
+            "search_volume": 135000
+          },
+          {
+            "year": 2025,
+            "month": 4,
+            "search_volume": 135000
+          },
+          {
+            "year": 2025,
+            "month": 3,
+            "search_volume": 201000
+          },
+          {
+            "year": 2025,
+            "month": 2,
+            "search_volume": 135000
+          },
+          {
+            "year": 2025,
+            "month": 1,
+            "search_volume": 135000
+          },
+          {
+            "year": 2024,
+            "month": 12,
+            "search_volume": 135000
+          },
+          {
+            "year": 2024,
+            "month": 11,
+            "search_volume": 135000
+          },
+          {
+            "year": 2024,
+            "month": 10,
+            "search_volume": 110000
+          },
+          {
+            "year": 2024,
+            "month": 9,
+            "search_volume": 135000
+          },
+          {
+            "year": 2024,
+            "month": 8,
+            "search_volume": 110000
+          }
+        ]
+      },
+      {
+        "keyword": "phone",
+        "player": "Unknown",
+        "monthlyBreakdown": [
+          {
+            "year": 2025,
+            "month": 7,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 6,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 5,
+            "search_volume": 550000
+          },
+          {
+            "year": 2025,
+            "month": 4,
+            "search_volume": 550000
+          },
+          {
+            "year": 2025,
+            "month": 3,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 2,
+            "search_volume": 368000
+          },
+          {
+            "year": 2025,
+            "month": 1,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 12,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 11,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 10,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 9,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 8,
+            "search_volume": 450000
+          }
+        ]
+      },
+      {
+        "keyword": "lkjhgfvbnm",
+        "player": "Unknown",
+        "monthlyBreakdown": [
+          {
+            "year": 2025,
+            "month": 7,
+            "search_volume": 10
+          },
+          {
+            "year": 2025,
+            "month": 6,
+            "search_volume": 0
+          },
+          {
+            "year": 2025,
+            "month": 5,
+            "search_volume": 10
+          },
+          {
+            "year": 2025,
+            "month": 4,
+            "search_volume": 0
+          },
+          {
+            "year": 2025,
+            "month": 3,
+            "search_volume": 10
+          },
+          {
+            "year": 2025,
+            "month": 2,
+            "search_volume": 0
+          },
+          {
+            "year": 2025,
+            "month": 1,
+            "search_volume": 0
+          },
+          {
+            "year": 2024,
+            "month": 12,
+            "search_volume": 10
+          },
+          {
+            "year": 2024,
+            "month": 11,
+            "search_volume": 0
+          },
+          {
+            "year": 2024,
+            "month": 10,
+            "search_volume": 10
+          },
+          {
+            "year": 2024,
+            "month": 9,
+            "search_volume": 10
+          },
+          {
+            "year": 2024,
+            "month": 8,
+            "search_volume": 10
+          }
+        ]
+      },
+      {
+        "keyword": "watch",
+        "player": "Unknown",
+        "monthlyBreakdown": [
+          {
+            "year": 2025,
+            "month": 7,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 6,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 5,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 4,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 3,
+            "search_volume": 450000
+          },
+          {
+            "year": 2025,
+            "month": 2,
+            "search_volume": 368000
+          },
+          {
+            "year": 2025,
+            "month": 1,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 12,
+            "search_volume": 550000
+          },
+          {
+            "year": 2024,
+            "month": 11,
+            "search_volume": 550000
+          },
+          {
+            "year": 2024,
+            "month": 10,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 9,
+            "search_volume": 450000
+          },
+          {
+            "year": 2024,
+            "month": 8,
+            "search_volume": 450000
+          }
+        ]
+      }
+    ]
+  }
+}

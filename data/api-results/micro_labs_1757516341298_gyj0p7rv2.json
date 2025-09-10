@@ -1,0 +1,66 @@
+{
+  "id": "micro_labs_1757516341298_gyj0p7rv2",
+  "timestamp": "2025-09-10T14:59:01.298Z",
+  "testType": "micro_labs",
+  "source": "DataForSEO Labs",
+  "metadata": {
+    "players": [
+      "Federico Valverde",
+      "Thibaut Courtois",
+      "Dean Huijsen",
+      "Arda Guler",
+      "Pedri"
+    ],
+    "markets": [
+      "United States",
+      "United Kingdom"
+    ],
+    "keywordCount": 150,
+    "actualCost": 3.03,
+    "dateRange": {
+      "from": "2024-07-01",
+      "to": "2025-07-01"
+    },
+    "apiMode": "Sandbox"
+  },
+  "rawApiData": {
+    "tasks": [
+      {
+        "result": {
+          "United States": [],
+          "United Kingdom": []
+        }
+      }
+    ]
+  },
+  "processedResults": {
+    "testType": "micro_labs",
+    "players": [
+      "Federico Valverde",
+      "Thibaut Courtois",
+      "Dean Huijsen",
+      "Arda Guler",
+      "Pedri"
+    ],
+    "markets": [
+      "United States",
+      "United Kingdom"
+    ],
+    "keywordCount": 150,
+    "estimatedCost": 1.515,
+    "actualCost": 3.03,
+    "dateRange": {
+      "from": "2024-07-01",
+      "to": "2025-07-01"
+    },
+    "apiMode": "Sandbox",
+    "results": {
+      "United States": [],
+      "United Kingdom": []
+    }
+  },
+  "monthlyData": {
+    "United States": [],
+    "United Kingdom": []
+  }
+}

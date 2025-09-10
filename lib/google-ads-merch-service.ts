@@ -2,6 +2,7 @@
 // Format: "Player Name + Merch Term" (e.g., "Lionel Messi shirt")
 
 import { FINAL_PLAYER_NAMES } from './final-player-data';
+import { dataStorageService } from './data-storage-service';
 
 // 5 priority markets for production run
 export const PRIORITY_MARKETS = {
@@ -240,8 +241,8 @@ class GoogleAdsMerchService {
     // Restore original baseUrl
     this.baseUrl = originalBaseUrl;
     
-    return {
-      testType: 'micro',
+    const testResults = {
+      testType: 'micro' as const,
       players: testPlayers,
       markets: testMarkets.map(([name]) => name),
       keywordCount: testKeywords.length,
@@ -250,6 +251,21 @@ class GoogleAdsMerchService {
       apiMode: mode,
       results
     };
+
+    // Auto-save all Google Ads API results for permanent storage
+    try {
+      const storageId = await dataStorageService.saveAPIResults(
+        'micro',
+        'Google Ads API',
+        { tasks: [{ result: results }] }, // Raw API structure
+        testResults
+      );
+      console.log(`💾 Google Ads micro test results saved with ID: ${storageId}`);
+    } catch (error) {
+      console.error('⚠️ Failed to save Google Ads micro test results:', error);
+    }
+    
+    return testResults;
   }
 
   // Run full production test (125 players × 5 markets × 30 terms = 18,750 keywords)
