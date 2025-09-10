@@ -3,6 +3,7 @@
 // For 18,750 keywords: ~$1.89 vs $18.75
 
 import { FINAL_PLAYER_NAMES } from './final-player-data';
+import { dataStorageService } from './data-storage-service';
 
 // 5 priority markets for production run
 export const PRIORITY_MARKETS = {
@@ -259,8 +260,8 @@ class DataForSEOLabsService {
     
     const actualCost = totalRequests * 0.0101; // Actual cost based on requests made
     
-    return {
-      testType: 'micro_labs',
+    const testResults = {
+      testType: 'micro_labs' as const,
       players: testPlayers,
       markets: testMarkets.map(([name]) => name),
       keywordCount: testKeywords.length,
@@ -270,6 +271,21 @@ class DataForSEOLabsService {
       apiMode: mode,
       results
     };
+
+    // Auto-save all API results for permanent storage
+    try {
+      const storageId = await dataStorageService.saveAPIResults(
+        'micro_labs',
+        'DataForSEO Labs',
+        { tasks: [{ result: results }] }, // Raw API structure
+        testResults
+      );
+      console.log(`💾 Micro test results saved with ID: ${storageId}`);
+    } catch (error) {
+      console.error('⚠️ Failed to save micro test results:', error);
+    }
+    
+    return testResults;
   }
 
   // Run full production test (125 players × 30 terms × 5 markets = 18,750 keywords)
@@ -349,8 +365,8 @@ class DataForSEOLabsService {
     console.log(`\n🎉 Labs API Production Test Complete!`);
     console.log(`💰 Final cost: $${actualCost.toFixed(2)} (saved ~$16.86 vs Google Ads API!)`);
     
-    return {
-      testType: 'full_production_labs',
+    const productionResults = {
+      testType: 'full_production_labs' as const,
       players: allPlayers,
       markets: allMarkets.map(([name]) => name),
       keywordCount: allKeywords.length,
@@ -362,6 +378,22 @@ class DataForSEOLabsService {
       progress: { current: totalRequests, total: totalKeywords },
       results
     };
+
+    // Auto-save all production API results for permanent storage
+    try {
+      const storageId = await dataStorageService.saveAPIResults(
+        'full_production_labs',
+        'DataForSEO Labs',
+        { tasks: [{ result: results }] }, // Raw API structure
+        productionResults
+      );
+      console.log(`💾 Production test results saved with ID: ${storageId}`);
+      console.log(`📁 Data saved to: ${dataStorageService.getStorageDirectory()}`);
+    } catch (error) {
+      console.error('⚠️ Failed to save production test results:', error);
+    }
+    
+    return productionResults;
   }
 
   private delay(ms: number): Promise<void> {
