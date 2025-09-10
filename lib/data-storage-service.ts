@@ -17,8 +17,8 @@ export interface StoredDataForSEOResult {
     dateRange?: { from: string; to: string };
     apiMode: string;
   };
-  rawApiData: any; // Complete raw API response
-  processedResults: any; // Processed results for dashboard
+  rawApiData: Record<string, unknown>; // Complete raw API response
+  processedResults: Record<string, unknown>; // Processed results for dashboard
   monthlyData: {
     [market: string]: Array<{
       keyword: string;
@@ -52,14 +52,14 @@ class DataStorageService {
   async saveAPIResults(
     testType: StoredDataForSEOResult['testType'],
     source: StoredDataForSEOResult['source'],
-    rawApiData: any,
-    processedResults: any
+    rawApiData: Record<string, unknown>,
+    processedResults: Record<string, unknown>
   ): Promise<string> {
     const id = `${testType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const timestamp = new Date().toISOString();
     
     // Extract monthly data for July 2025 analysis
-    const monthlyData = this.extractMonthlyData(processedResults.results || {});
+    const monthlyData = this.extractMonthlyData((processedResults.results || {}) as Record<string, unknown>);
     
     const storedData: StoredDataForSEOResult = {
       id,
@@ -67,12 +67,12 @@ class DataStorageService {
       testType,
       source,
       metadata: {
-        players: processedResults.players || [],
-        markets: processedResults.markets || [],
-        keywordCount: processedResults.keywordCount || 0,
-        actualCost: processedResults.actualCost || 0,
-        dateRange: processedResults.dateRange,
-        apiMode: processedResults.apiMode || 'Unknown'
+        players: (processedResults.players as string[]) || [],
+        markets: (processedResults.markets as string[]) || [],
+        keywordCount: (processedResults.keywordCount as number) || 0,
+        actualCost: (processedResults.actualCost as number) || 0,
+        dateRange: processedResults.dateRange as { from: string; to: string } | undefined,
+        apiMode: (processedResults.apiMode as string) || 'Unknown'
       },
       rawApiData,
       processedResults,
@@ -98,22 +98,22 @@ class DataStorageService {
   }
 
   // Extract monthly data for easy analysis
-  private extractMonthlyData(results: any): StoredDataForSEOResult['monthlyData'] {
+  private extractMonthlyData(results: Record<string, unknown>): StoredDataForSEOResult['monthlyData'] {
     const monthlyData: StoredDataForSEOResult['monthlyData'] = {};
     
     Object.entries(results).forEach(([market, keywords]) => {
       monthlyData[market] = [];
       
-      (keywords as any[]).forEach((kw) => {
+      (keywords as Array<Record<string, unknown>>).forEach((kw) => {
         // Extract player name from keyword
-        const playerMatch = kw.keyword.match(/^([A-Za-z\s]+?)\s+(shirt|jersey|signed|autograph|memorabilia|boots|cleats|card|poster|authentic|official|framed|ball|collectibles|signature|coins|exclusive|dedication|artwork|art|sports|soccer|football|limited|edition)/i);
+        const playerMatch = (kw.keyword as string).match(/^([A-Za-z\s]+?)\s+(shirt|jersey|signed|autograph|memorabilia|boots|cleats|card|poster|authentic|official|framed|ball|collectibles|signature|coins|exclusive|dedication|artwork|art|sports|soccer|football|limited|edition)/i);
         const player = playerMatch ? playerMatch[1].trim() : 'Unknown';
         
         if (kw.monthly_searches && Array.isArray(kw.monthly_searches)) {
           monthlyData[market].push({
-            keyword: kw.keyword,
+            keyword: kw.keyword as string,
             player,
-            monthlyBreakdown: kw.monthly_searches
+            monthlyBreakdown: kw.monthly_searches as Array<{year: number; month: number; search_volume: number}>
           });
         }
       });
@@ -161,15 +161,15 @@ class DataStorageService {
     let csv = 'Market,Player Name,Keyword,Search Volume,Competition Level,CPC ($),Monthly Trend (Last 3 months),Test Type,Source,Date Range,Cost\n';
     
     Object.entries(data.processedResults.results || {}).forEach(([market, keywords]) => {
-      (keywords as any[]).forEach((kw) => {
-        const playerMatch = kw.keyword.match(/^([A-Za-z\s]+?)\s+(shirt|jersey|signed|autograph|memorabilia|boots|cleats|card|poster|authentic|official|framed|ball|collectibles|signature|coins|exclusive|dedication|artwork|art|sports|soccer|football|limited|edition)/i);
+      (keywords as Array<Record<string, unknown>>).forEach((kw) => {
+        const playerMatch = (kw.keyword as string).match(/^([A-Za-z\s]+?)\s+(shirt|jersey|signed|autograph|memorabilia|boots|cleats|card|poster|authentic|official|framed|ball|collectibles|signature|coins|exclusive|dedication|artwork|art|sports|soccer|football|limited|edition)/i);
         const player = playerMatch ? playerMatch[1].trim() : 'Unknown';
         
         const monthlyTrend = kw.monthly_searches && Array.isArray(kw.monthly_searches) ? 
-          kw.monthly_searches.slice(-3).map((m: any) => m.search_volume).join(';') : 
+          kw.monthly_searches.slice(-3).map((m: {search_volume: number}) => m.search_volume).join(';') : 
           'N/A';
           
-        csv += `"${market}","${player}","${kw.keyword}",${kw.search_volume || 0},"${kw.competition_level || 'N/A'}",${kw.cpc || 0},"${monthlyTrend}","${data.testType}","${data.source}","${data.metadata.dateRange?.from || 'Current'} to ${data.metadata.dateRange?.to || 'Current'}",${data.metadata.actualCost}\n`;
+        csv += `"${market}","${player}","${(kw as Record<string, unknown>).keyword}",${(kw as Record<string, unknown>).search_volume || 0},"${(kw as Record<string, unknown>).competition_level || 'N/A'}",${(kw as Record<string, unknown>).cpc || 0},"${monthlyTrend}","${data.testType}","${data.source}","${data.metadata.dateRange?.from || 'Current'} to ${data.metadata.dateRange?.to || 'Current'}",${data.metadata.actualCost}\n`;
       });
     });
     
@@ -187,9 +187,10 @@ class DataStorageService {
         const volume = july2025 ? july2025.search_volume : 'N/A';
         
         // Get additional data from processed results
-        const keywordData = data.processedResults.results[market]?.find((k: any) => k.keyword === item.keyword);
-        const competition = keywordData?.competition_level || 'N/A';
-        const cpc = keywordData?.cpc || 0;
+        const keywordData = (data.processedResults.results as Record<string, unknown>)?.[market] as Array<Record<string, unknown>> | undefined;
+        const matchedKeyword = keywordData?.find((k: Record<string, unknown>) => k.keyword === item.keyword);
+        const competition = matchedKeyword?.competition_level || 'N/A';
+        const cpc = matchedKeyword?.cpc || 0;
         
         csv += `"${market}","${item.player}","${item.keyword}",${volume},"${competition}",${cpc}\n`;
       });
