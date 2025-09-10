@@ -90,6 +90,15 @@ class DataStorageService {
       // Also create CSV exports automatically
       await this.createAutomaticExports(storedData);
       
+      // Show all created files for easy access
+      console.log(`\n📁 ALL DATA FILES CREATED:`);
+      console.log(`   JSON: ${filepath}`);
+      console.log(`   Comprehensive CSV: ${path.join(this.storageDir, `${id.split('_')[0]}_${new Date().toISOString().split('T')[0]}_comprehensive.csv`)}`);
+      console.log(`   July 2025 CSV: ${path.join(this.storageDir, `${id.split('_')[0]}_${new Date().toISOString().split('T')[0]}_july2025.csv`)}`);
+      console.log(`   Executive Summary: ${path.join(this.storageDir, `${id.split('_')[0]}_${new Date().toISOString().split('T')[0]}_executive_summary.csv`)}`);
+      console.log(`   Raw API Data: ${path.join(this.storageDir, `${id.split('_')[0]}_${new Date().toISOString().split('T')[0]}_raw_api.json`)}`);
+      console.log(`📂 Storage Directory: ${this.storageDir}\n`);
+      
       return id;
     } catch (error) {
       console.error('❌ Failed to save API results:', error);

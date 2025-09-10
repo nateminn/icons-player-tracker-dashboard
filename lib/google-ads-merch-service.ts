@@ -373,8 +373,8 @@ class GoogleAdsMerchService {
     console.log(`\n🎉 Full Production Test Complete!`);
     console.log(`📊 Total Results: ${totalResults}/${allKeywords.length * allMarkets.length} keywords processed`);
     
-    return {
-      testType: 'full_production',
+    const testResults = {
+      testType: 'full_production' as const,
       players: allPlayers,
       markets: allMarkets.map(([name]) => name),
       keywordCount: allKeywords.length,
@@ -385,6 +385,24 @@ class GoogleAdsMerchService {
       progress: { current: totalResults, total: allKeywords.length * allMarkets.length },
       results
     };
+
+    // Auto-save ALL production results for permanent storage (CRITICAL)
+    try {
+      const storageId = await dataStorageService.saveAPIResults(
+        'full_production',
+        'Google Ads API',
+        { tasks: [{ result: results }] }, // Raw API structure
+        testResults
+      );
+      console.log(`💾 FULL PRODUCTION results saved with ID: ${storageId}`);
+      console.log(`📁 Data location: ${dataStorageService.getStorageDirectory()}`);
+      console.log(`📊 Files created: JSON, comprehensive CSV, July 2025 CSV, executive summary, raw API`);
+    } catch (error) {
+      console.error('🚨 CRITICAL: Failed to save full production results:', error);
+      // Still return results even if auto-save fails
+    }
+    
+    return testResults;
   }
 
   // Calculate full production requirements
