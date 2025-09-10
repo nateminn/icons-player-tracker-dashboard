@@ -92,6 +92,9 @@ export default function EnhancedDashboard() {
     from: '2025-08-01',
     to: '2025-08-31'
   });
+  
+  // Detailed results view state
+  const [showDetailedResults, setShowDetailedResults] = useState<boolean>(false);
 
 
   useEffect(() => {
@@ -207,6 +210,40 @@ export default function EnhancedDashboard() {
       alert("Failed to fetch data from DataForSEO. Using sample data instead.");
     } finally {
       setIsLoadingData(false);
+    }
+  };
+  
+  // Generate CSV report for executive team
+  const generateCSVReport = (results: typeof microTestResults) => {
+    if (!results) return '';
+    
+    let csvContent = 'Market,Player,Keyword,Search Volume,Competition,CPC,Date Range\n';
+    
+    Object.entries(results.results || {}).forEach(([market, keywords]) => {
+      keywords.forEach((kw) => {
+        // Extract player name from keyword (assumes "Player Name + term" format)
+        const playerMatch = kw.keyword.match(/^([A-Za-z\s]+?)\s+(shirt|jersey|signed|autograph|memorabilia|boots|cleats|card|poster|authentic|official|framed|ball|collectibles|signature|coins|exclusive|dedication|artwork|art|sports|soccer|football|limited|edition|unique|one of a kind)/i);
+        const player = playerMatch ? playerMatch[1].trim() : 'Unknown';
+        
+        csvContent += `"${market}","${player}","${kw.keyword}",${kw.search_volume || 0},"${kw.competition || 'N/A'}",${kw.cpc || 0},"${results.dateRange?.from || 'Current'} to ${results.dateRange?.to || 'Current'}"\n`;
+      });
+    });
+    
+    return csvContent;
+  };
+  
+  // Download CSV file
+  const downloadCSV = (csvContent: string, filename: string) => {
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -503,18 +540,72 @@ export default function EnhancedDashboard() {
                   <p><strong>Cost:</strong> ${microTestResults.estimatedCost}</p>
                 </div>
                 
+                {/* Results Summary and Toggle */}
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => setShowDetailedResults(!showDetailedResults)}
+                    className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+                  >
+                    {showDetailedResults ? '📊 Hide Full Report' : '📋 View Full Executive Report (All 160 Keywords)'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const csvContent = generateCSVReport(microTestResults);
+                      downloadCSV(csvContent, `Executive-Report-${microTestResults.dateRange?.from || 'current'}.csv`);
+                    }}
+                    className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                  >
+                    📥 Download CSV Report
+                  </button>
+                </div>
+
                 {/* Sample results for each market */}
                 {Object.entries(microTestResults.results || {}).map(([market, keywords]) => (
                   <div key={market} className="mt-3 p-2 bg-white rounded border">
-                    <p className="font-medium text-sm">{market} - Top Keywords:</p>
+                    <p className="font-medium text-sm">{market} - {showDetailedResults ? 'All Keywords' : 'Top Keywords'}:</p>
                     <div className="text-xs space-y-1 mt-1">
-                      {keywords.slice(0, 3).map((kw, i: number) => (
-                        <div key={i} className="flex justify-between">
-                          <span>&quot;{kw.keyword}&quot;</span>
-                          <span>{kw.search_volume?.toLocaleString() || 0} searches/month</span>
+                      {showDetailedResults ? (
+                        // Show all keywords in detailed view
+                        <div className="max-h-96 overflow-y-auto">
+                          <div className="grid gap-1">
+                            {keywords
+                              .sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))
+                              .map((kw, i: number) => (
+                                <div key={i} className="flex justify-between py-1 border-b border-gray-100 hover:bg-gray-50">
+                                  <span className="font-mono">&quot;{kw.keyword}&quot;</span>
+                                  <div className="flex gap-4 text-right">
+                                    <span className="text-blue-600 font-medium">
+                                      {kw.search_volume?.toLocaleString() || 0} searches/month
+                                    </span>
+                                    <span className="text-gray-500 w-12">
+                                      {kw.competition || 'N/A'}
+                                    </span>
+                                    <span className="text-green-600 w-16">
+                                      ${kw.cpc?.toFixed(2) || '0.00'} CPC
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                          </div>
                         </div>
-                      ))}
+                      ) : (
+                        // Show top 3 keywords in summary view
+                        keywords
+                          .sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))
+                          .slice(0, 3)
+                          .map((kw, i: number) => (
+                            <div key={i} className="flex justify-between">
+                              <span>&quot;{kw.keyword}&quot;</span>
+                              <span>{kw.search_volume?.toLocaleString() || 0} searches/month</span>
+                            </div>
+                          ))
+                      )}
                     </div>
+                    {!showDetailedResults && keywords.length > 3 && (
+                      <div className="text-xs text-gray-500 mt-1">
+                        ...and {keywords.length - 3} more keywords
+                      </div>
+                    )}
                   </div>
                 ))}
                 
