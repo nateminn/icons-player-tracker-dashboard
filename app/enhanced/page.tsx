@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { 
   Menu, X, Download, Settings, RefreshCcw, TrendingUp, 
-  TrendingDown, Users, Globe, Target, BarChart3 
+  TrendingDown, Users, Globe, Target, BarChart3, Rocket 
 } from "lucide-react";
 import { generateEnhancedPlayerData, marketsList } from '@/lib/market-data-generator';
 
@@ -79,6 +79,25 @@ export default function EnhancedDashboard() {
     keywordCount: number;
     estimatedCost: number;
     dateRange?: { from: string; to: string };
+    apiMode?: string;
+    results: Record<string, Array<{
+      keyword: string;
+      search_volume?: number;
+      competition?: string;
+      cpc?: number;
+    }>>;
+  } | null>(null);
+  
+  const [productionTestResults, setProductionTestResults] = useState<{
+    testType: string;
+    players: string[];
+    markets: string[];
+    keywordCount: number;
+    totalRequests: number;
+    estimatedCost: number;
+    dateRange?: { from: string; to: string };
+    apiMode: string;
+    progress: { current: number; total: number };
     results: Record<string, Array<{
       keyword: string;
       search_volume?: number;
@@ -95,6 +114,9 @@ export default function EnhancedDashboard() {
   
   // Detailed results view state
   const [showDetailedResults, setShowDetailedResults] = useState<boolean>(false);
+  
+  // Sandbox mode state
+  const [sandboxMode, setSandboxMode] = useState<boolean>(true);
 
 
   useEffect(() => {
@@ -154,7 +176,8 @@ export default function EnhancedDashboard() {
         body: JSON.stringify({
           action: 'run_micro_test',
           dateFrom: dateRange.from,
-          dateTo: dateRange.to
+          dateTo: dateRange.to,
+          useSandbox: sandboxMode
         }),
       });
 
@@ -164,7 +187,7 @@ export default function EnhancedDashboard() {
         console.log('✅ Micro test completed!', result.data);
         
         // Check if API returned actual data (or if we're out of credits)
-        const hasData = Object.values(result.data.results || {}).some((keywords: any[]) => keywords.length > 0);
+        const hasData = Object.values(result.data.results || {}).some((keywords) => Array.isArray(keywords) && keywords.length > 0);
         
         if (!hasData && result.data.results) {
           console.log('🎯 No API data available (credits exhausted), generating sample data for executive report demonstration');
@@ -181,6 +204,44 @@ export default function EnhancedDashboard() {
     } catch (error) {
       console.error("❌ Micro test failed:", error);
       alert("Micro test failed. Check console for details.");
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
+  const runFullProductionTest = async () => {
+    if (!window.confirm("🚀 FULL PRODUCTION TEST\n\nThis will process 18,750 keywords across 125 players × 30 merch terms × 5 markets.\n\nEstimated cost: ~$18.75\nEstimated time: ~30 minutes\n\nAre you sure you want to proceed?")) {
+      return;
+    }
+    
+    setIsLoadingData(true);
+    try {
+      console.log('🚀 Starting Full Production Test - 125 players × 30 merch terms × 5 markets...');
+      
+      const response = await fetch('/api/dataforseo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'run_full_production_test',
+          dateFrom: dateRange.from,
+          dateTo: dateRange.to
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ Full production test completed!', result.data);
+        setProductionTestResults(result.data);
+        alert(`🎉 Full Production Test Completed!\n\nProcessed ${result.data.keywordCount} keywords for ${result.data.players.length} players across ${result.data.markets.length} markets.\n\nTotal requests: ${result.data.totalRequests}\nActual cost: $${result.data.estimatedCost}\n\nResults now displayed below!`);
+      } else {
+        throw new Error(result.error || 'Full production test failed');
+      }
+    } catch (error) {
+      console.error("❌ Full production test failed:", error);
+      alert("Full production test failed. Check console for details.");
     } finally {
       setIsLoadingData(false);
     }
@@ -244,7 +305,7 @@ export default function EnhancedDashboard() {
   };
   
   // Generate sample data for demonstration when API credits are exhausted
-  const generateSampleMicroTestResults = (originalData: any) => {
+  const generateSampleMicroTestResults = (originalData: { testType: string; players: string[]; markets: string[]; keywordCount: number; estimatedCost: number; dateRange?: { from: string; to: string }; apiMode?: string; }) => {
     const players = ["Federico Valverde", "Thibaut Courtois", "Dean Huijsen", "Arda Guler", "Pedri"];
     const markets = ["United Kingdom", "United States"];
     const merchTerms = ["shirt", "jersey", "signed shirt", "signed jersey", "signed", "autograph", "autographed", 
@@ -254,10 +315,10 @@ export default function EnhancedDashboard() {
       "sports memorabilia", "soccer memorabilia", "football memorabilia", "limited edition", 
       "Unique", "One of a kind"];
 
-    const sampleResults: Record<string, any[]> = {};
+    const sampleResults: Record<string, Array<{ keyword: string; search_volume?: number; competition?: string; cpc?: number; }>> = {};
     
     markets.forEach(market => {
-      const keywords: any[] = [];
+      const keywords: Array<{ keyword: string; search_volume?: number; competition?: string; cpc?: number; }> = [];
       players.forEach(player => {
         merchTerms.forEach(term => {
           // Generate realistic search volumes based on market
@@ -532,6 +593,29 @@ export default function EnhancedDashboard() {
 
               {apiConnectionStatus === "connected" && (
                 <>
+                  {/* Sandbox Mode Toggle */}
+                  <div className="mt-3 p-3 rounded-md bg-purple-50 border border-purple-200">
+                    <div className="text-xs font-medium text-purple-700 mb-2">🔧 API Testing Mode</div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setSandboxMode(!sandboxMode)}
+                        className={`flex items-center gap-2 px-3 py-1 rounded text-xs transition-colors ${
+                          sandboxMode 
+                            ? 'bg-purple-600 text-white' 
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        }`}
+                      >
+                        <div className={`w-2 h-2 rounded-full ${sandboxMode ? 'bg-white' : 'bg-red-500'}`} />
+                        {sandboxMode ? '🧪 Sandbox Mode (Free Testing)' : '💰 Live Mode (Uses Credits)'}
+                      </button>
+                    </div>
+                    <div className="text-xs text-purple-600 mt-1">
+                      {sandboxMode 
+                        ? 'Unlimited free testing with sample data patterns' 
+                        : 'Uses actual API credits - real search volume data'}
+                    </div>
+                  </div>
+                  
                   {/* Date Range Controls */}
                   <div className="mt-3 p-3 rounded-md bg-blue-50 border border-blue-200">
                     <div className="text-xs font-medium text-blue-700 mb-2">📅 Executive Report Date Range</div>
@@ -565,11 +649,35 @@ export default function EnhancedDashboard() {
                     variant="default" 
                     onClick={runMicroTest}
                     disabled={isLoadingData}
-                    style={{ backgroundColor: '#16a34a', color: 'white' }}
+                    style={{ backgroundColor: sandboxMode ? '#7c3aed' : '#16a34a', color: 'white' }}
                   >
                     <Target className="h-4 w-4 mr-2" />
-                    🧪 Run Micro Test - {dateRange.from} to {dateRange.to} ($0.05)
+                    {sandboxMode ? '🧪' : '💰'} Run Micro Test ({sandboxMode ? 'Sandbox' : 'Live'}) - {dateRange.from} to {dateRange.to} 
+                    {!sandboxMode ? ' ($0.05)' : ' (Free)'}
                   </Button>
+                  
+                  {/* Full Production Test Button */}
+                  <div className="mt-3 p-3 rounded-md bg-red-50 border border-red-200">
+                    <div className="text-xs font-medium text-red-700 mb-2">🚀 Full Production Test</div>
+                    <div className="text-xs text-red-600 mb-3">
+                      125 players × 30 merch terms × 5 markets = 18,750 keywords<br/>
+                      Estimated cost: ~$18.75 (375 requests × $0.05)
+                    </div>
+                    <Button 
+                      className="w-full"
+                      variant="destructive" 
+                      onClick={runFullProductionTest}
+                      disabled={isLoadingData || sandboxMode}
+                    >
+                      <Rocket className="h-4 w-4 mr-2" />
+                      🚀 Run Full Production Test ($18.75)
+                    </Button>
+                    {sandboxMode && (
+                      <div className="text-xs text-gray-500 mt-2">
+                        Switch to Live Mode to run production test
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </div>
@@ -587,7 +695,9 @@ export default function EnhancedDashboard() {
             {/* Micro Test Results */}
             {microTestResults && (
               <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-                <h4 className="font-medium text-green-800 mb-2">🧪 Micro Test Results</h4>
+                <h4 className="font-medium text-green-800 mb-2">
+                  {microTestResults.apiMode === 'Sandbox' ? '🧪' : '💰'} Micro Test Results ({microTestResults.apiMode || 'API'} Mode)
+                </h4>
                 <div className="text-sm text-green-700 space-y-1">
                   <p><strong>Players:</strong> {microTestResults.players.join(', ')}</p>
                   <p><strong>Markets:</strong> {microTestResults.markets.join(', ')}</p>
@@ -670,6 +780,51 @@ export default function EnhancedDashboard() {
                 <button 
                   onClick={() => setMicroTestResults(null)}
                   className="mt-2 text-xs text-green-600 hover:text-green-800"
+                >
+                  Hide Results
+                </button>
+              </div>
+            )}
+
+            {/* Full Production Test Results */}
+            {productionTestResults && (
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                <h4 className="font-medium text-red-800 mb-2">
+                  🚀 Full Production Test Results (Live Mode)
+                </h4>
+                <div className="text-sm text-red-700 space-y-1">
+                  <p><strong>Players:</strong> {productionTestResults.players.length} total</p>
+                  <p><strong>Markets:</strong> {productionTestResults.markets.join(', ')}</p>
+                  <p><strong>Keywords processed:</strong> {productionTestResults.keywordCount?.toLocaleString()}</p>
+                  <p><strong>Total API requests:</strong> {productionTestResults.totalRequests}</p>
+                  <p><strong>Date Range:</strong> {productionTestResults.dateRange 
+                    ? `${productionTestResults.dateRange.from} to ${productionTestResults.dateRange.to}` 
+                    : 'Current + 12 months historical'}</p>
+                  <p><strong>Total Cost:</strong> ${productionTestResults.estimatedCost?.toFixed(2)}</p>
+                  <p><strong>Progress:</strong> {productionTestResults.progress?.current?.toLocaleString()} / {productionTestResults.progress?.total?.toLocaleString()} keywords completed</p>
+                </div>
+                
+                {/* Results Summary */}
+                <div className="mt-3">
+                  <div className="text-sm font-medium text-red-800 mb-2">Market Results Summary:</div>
+                  {Object.entries(productionTestResults.results || {}).map(([market, keywords]) => (
+                    <div key={market} className="mb-2 p-2 bg-white rounded border">
+                      <p className="font-medium text-sm">{market}:</p>
+                      <div className="text-xs space-y-1 mt-1">
+                        <p><strong>Total keywords with data:</strong> {keywords.length}</p>
+                        <p><strong>Top performing keyword:</strong> {
+                          keywords.length > 0 
+                            ? `"${keywords.sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))[0].keyword}" (${keywords[0].search_volume?.toLocaleString() || 0} searches/month)`
+                            : 'No data available'
+                        }</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <button 
+                  onClick={() => setProductionTestResults(null)}
+                  className="mt-2 text-xs text-red-600 hover:text-red-800"
                 >
                   Hide Results
                 </button>

@@ -62,13 +62,26 @@ export async function POST(request: NextRequest) {
         // Import the Google Ads merch service
         const { googleAdsMerchService } = await import('@/lib/google-ads-merch-service');
         
-        const { dateFrom, dateTo } = params;
-        const microTestResults = await googleAdsMerchService.runMicroTest(dateFrom, dateTo);
+        const { dateFrom, dateTo, useSandbox } = params;
+        const microTestResults = await googleAdsMerchService.runMicroTest(dateFrom, dateTo, useSandbox);
         
         return NextResponse.json({
           success: true,
-          message: 'Micro test completed successfully',
+          message: `Micro test completed successfully using ${useSandbox ? 'Sandbox' : 'Live'} API`,
           data: microTestResults
+        });
+
+      case 'run_full_production_test':
+        // Import the Google Ads merch service for full production run
+        const { googleAdsMerchService: prodService } = await import('@/lib/google-ads-merch-service');
+        
+        const { dateFrom: prodDateFrom, dateTo: prodDateTo } = params;
+        const productionResults = await prodService.runFullProductionTest(prodDateFrom, prodDateTo);
+        
+        return NextResponse.json({
+          success: true,
+          message: 'Full production test completed successfully',
+          data: productionResults
         });
 
       default:

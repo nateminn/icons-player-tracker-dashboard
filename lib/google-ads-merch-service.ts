@@ -3,17 +3,16 @@
 
 import { FINAL_PLAYER_NAMES } from './final-player-data';
 
-// 6 priority markets as specified
+// 5 priority markets for production run
 export const PRIORITY_MARKETS = {
-  "United Kingdom": 2826,
-  "United States": 2840, 
-  "Canada": 2124,
+  "United States": 2840,
+  "United Kingdom": 2826, 
+  "Mexico": 2484,
   "Australia": 2036,
-  "Germany": 2276,
-  "Mexico": 2484
+  "Germany": 2276
 };
 
-// Company approved merch terms (30 total)
+// Company approved merch terms (30 total for production)
 export const APPROVED_MERCH_TERMS = [
   "shirt",
   "jersey", 
@@ -44,9 +43,7 @@ export const APPROVED_MERCH_TERMS = [
   "sports memorabilia",
   "soccer memorabilia", 
   "football memorabilia",
-  "limited edition",
-  "Unique",
-  "One of a kind"
+  "limited edition"
 ];
 
 interface GoogleAdsKeywordResult {
@@ -182,16 +179,26 @@ class GoogleAdsMerchService {
   }
 
   // Run micro test (5 players × 2 markets for $0.05)
-  async runMicroTest(dateFrom?: string, dateTo?: string): Promise<{
+  async runMicroTest(dateFrom?: string, dateTo?: string, useSandbox?: boolean): Promise<{
     testType: string;
     players: string[];
     markets: string[];
     keywordCount: number;
     estimatedCost: number;
     dateRange?: { from: string; to: string };
+    apiMode: string;
     results: Record<string, GoogleAdsKeywordResult[]>;
   }> {
-    console.log('🧪 Starting Micro Test ($0.05)...');
+    const mode = useSandbox !== undefined ? (useSandbox ? 'Sandbox' : 'Live') : (this.baseUrl.includes('sandbox') ? 'Sandbox' : 'Live');
+    console.log(`🧪 Starting Micro Test ${mode} Mode ($0.05)...`);
+    
+    // Override baseUrl if useSandbox parameter is provided
+    const originalBaseUrl = this.baseUrl;
+    if (useSandbox !== undefined) {
+      this.baseUrl = useSandbox 
+        ? 'https://sandbox.dataforseo.com/v3' 
+        : 'https://api.dataforseo.com/v3';
+    }
     
     const testPlayers = FINAL_PLAYER_NAMES.slice(0, 5);
     const testMarkets = Object.entries(PRIORITY_MARKETS).slice(0, 2);
@@ -200,6 +207,7 @@ class GoogleAdsMerchService {
     console.log(`👥 Players: ${testPlayers.join(', ')}`);
     console.log(`🌍 Markets: ${testMarkets.map(([name]) => name).join(', ')}`);
     console.log(`🔑 Keywords: ${testKeywords.length} total`);
+    console.log(`🔧 API Mode: ${mode}`);
     
     if (dateFrom && dateTo) {
       console.log(`📅 Date range: ${dateFrom} to ${dateTo}`);
@@ -229,6 +237,9 @@ class GoogleAdsMerchService {
       }
     }
     
+    // Restore original baseUrl
+    this.baseUrl = originalBaseUrl;
+    
     return {
       testType: 'micro',
       players: testPlayers,
@@ -236,6 +247,102 @@ class GoogleAdsMerchService {
       keywordCount: testKeywords.length,
       estimatedCost: 0.05,
       dateRange: dateFrom && dateTo ? { from: dateFrom, to: dateTo } : undefined,
+      apiMode: mode,
+      results
+    };
+  }
+
+  // Run full production test (125 players × 5 markets × 30 terms = 18,750 keywords)
+  async runFullProductionTest(dateFrom?: string, dateTo?: string): Promise<{
+    testType: string;
+    players: string[];
+    markets: string[];
+    keywordCount: number;
+    totalRequests: number;
+    estimatedCost: number;
+    dateRange?: { from: string; to: string };
+    apiMode: string;
+    progress: { current: number; total: number };
+    results: Record<string, GoogleAdsKeywordResult[]>;
+  }> {
+    console.log('🚀 Starting Full Production Test...');
+    console.log('📊 SCOPE: 125 players × 30 merch terms × 5 markets = 18,750 keywords');
+    
+    const allPlayers = FINAL_PLAYER_NAMES; // All 125 players
+    const allMarkets = Object.entries(PRIORITY_MARKETS); // All 5 markets
+    const allKeywords = this.generatePlayerMerchKeywords(allPlayers, APPROVED_MERCH_TERMS);
+    
+    // Calculate requests needed (max 1000 keywords per request)
+    const keywordsPerRequest = 1000;
+    const requestsPerMarket = Math.ceil(allKeywords.length / keywordsPerRequest);
+    const totalRequests = requestsPerMarket * allMarkets.length;
+    const estimatedCost = totalRequests * 0.05; // $0.05 per request
+    
+    console.log(`👥 Players: ${allPlayers.length}`);
+    console.log(`🌍 Markets: ${allMarkets.map(([name]) => name).join(', ')}`);
+    console.log(`🔑 Keywords: ${allKeywords.length} total`);
+    console.log(`📤 Requests: ${requestsPerMarket} per market × ${allMarkets.length} markets = ${totalRequests} total`);
+    console.log(`💰 Estimated cost: $${estimatedCost.toFixed(2)}`);
+    
+    if (dateFrom && dateTo) {
+      console.log(`📅 Date range: ${dateFrom} to ${dateTo}`);
+    }
+    
+    const results: Record<string, GoogleAdsKeywordResult[]> = {};
+    let currentRequest = 0;
+    
+    for (const [market, locationCode] of allMarkets) {
+      console.log(`\n🌍 Processing market: ${market}`);
+      results[market] = [];
+      
+      // Split keywords into batches of 1000
+      for (let i = 0; i < allKeywords.length; i += keywordsPerRequest) {
+        currentRequest++;
+        const keywordBatch = allKeywords.slice(i, i + keywordsPerRequest);
+        
+        console.log(`📤 Request ${currentRequest}/${totalRequests}: Processing ${keywordBatch.length} keywords for ${market}`);
+        
+        try {
+          const batchResults = await this.getKeywordSearchVolume(
+            keywordBatch,
+            locationCode,
+            'en',
+            dateFrom,
+            dateTo
+          );
+          
+          results[market].push(...batchResults);
+          console.log(`✅ Received ${batchResults.length} results for ${market} (batch ${Math.floor(i / keywordsPerRequest) + 1})`);
+          
+          // Add delay between requests (rate limiting)
+          if (currentRequest < totalRequests) {
+            console.log('⏱️ Waiting 5 seconds between requests...');
+            await this.delay(5000);
+          }
+          
+        } catch (error) {
+          console.error(`❌ Failed batch for ${market}:`, error);
+          // Continue with other batches even if one fails
+        }
+      }
+      
+      console.log(`🎯 Market ${market} complete: ${results[market].length} total results`);
+    }
+    
+    const totalResults = Object.values(results).reduce((sum, marketResults) => sum + marketResults.length, 0);
+    console.log(`\n🎉 Full Production Test Complete!`);
+    console.log(`📊 Total Results: ${totalResults}/${allKeywords.length * allMarkets.length} keywords processed`);
+    
+    return {
+      testType: 'full_production',
+      players: allPlayers,
+      markets: allMarkets.map(([name]) => name),
+      keywordCount: allKeywords.length,
+      totalRequests,
+      estimatedCost,
+      dateRange: dateFrom && dateTo ? { from: dateFrom, to: dateTo } : undefined,
+      apiMode: 'Live',
+      progress: { current: totalResults, total: allKeywords.length * allMarkets.length },
       results
     };
   }
