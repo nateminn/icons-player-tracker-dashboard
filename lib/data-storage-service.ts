@@ -44,7 +44,7 @@ class DataStorageService {
   private ensureDirectoryExists() {
     if (!fs.existsSync(this.storageDir)) {
       fs.mkdirSync(this.storageDir, { recursive: true });
-      console.log(`📁 Created data storage directory: ${this.storageDir}`);
+      console.log(`Created data storage directory: ${this.storageDir}`);
     }
   }
 
@@ -85,23 +85,23 @@ class DataStorageService {
     
     try {
       fs.writeFileSync(filepath, JSON.stringify(storedData, null, 2));
-      console.log(`💾 Saved API results to: ${filepath}`);
+      console.log(`Saved API results to: ${filepath}`);
       
       // Also create CSV exports automatically
       await this.createAutomaticExports(storedData);
       
       // Show all created files for easy access
-      console.log(`\n📁 ALL DATA FILES CREATED:`);
+      console.log(`\nALL DATA FILES CREATED:`);
       console.log(`   JSON: ${filepath}`);
       console.log(`   Comprehensive CSV: ${path.join(this.storageDir, `${id.split('_')[0]}_${new Date().toISOString().split('T')[0]}_comprehensive.csv`)}`);
       console.log(`   July 2025 CSV: ${path.join(this.storageDir, `${id.split('_')[0]}_${new Date().toISOString().split('T')[0]}_july2025.csv`)}`);
       console.log(`   Executive Summary: ${path.join(this.storageDir, `${id.split('_')[0]}_${new Date().toISOString().split('T')[0]}_executive_summary.csv`)}`);
       console.log(`   Raw API Data: ${path.join(this.storageDir, `${id.split('_')[0]}_${new Date().toISOString().split('T')[0]}_raw_api.json`)}`);
-      console.log(`📂 Storage Directory: ${this.storageDir}\n`);
+      console.log(`Storage Directory: ${this.storageDir}\n`);
       
       return id;
     } catch (error) {
-      console.error('❌ Failed to save API results:', error);
+      console.error('Failed to save API results:', error);
       throw error;
     }
   }
@@ -171,7 +171,7 @@ class DataStorageService {
       JSON.stringify(data.rawApiData, null, 2)
     );
     
-    console.log(`📊 Created automatic exports for ${data.testType} test`);
+    console.log(`Created automatic exports for ${data.testType} test`);
   }
 
   // Generate comprehensive CSV with all available data
@@ -254,7 +254,7 @@ class DataStorageService {
         return JSON.parse(content) as StoredDataForSEOResult;
       }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     } catch (error) {
-      console.error('❌ Failed to read stored results:', error);
+      console.error('Failed to read stored results:', error);
       return [];
     }
   }
@@ -266,7 +266,7 @@ class DataStorageService {
       const content = fs.readFileSync(filepath, 'utf8');
       return JSON.parse(content) as StoredDataForSEOResult;
     } catch (error) {
-      console.error(`❌ Failed to read stored result ${id}:`, error);
+      console.error(`Failed to read stored result ${id}:`, error);
       return null;
     }
   }

@@ -84,6 +84,28 @@ export async function POST(request: NextRequest) {
           data: productionResults
         });
 
+      case 'collect_all_data':
+        // Single comprehensive data collection with all players, markets, and merch terms
+        const { googleAdsMerchService: collectService } = await import('@/lib/google-ads-merch-service');
+        const { dataStorageService } = await import('@/lib/data-storage-service');
+        
+        const { dateFrom: collectDateFrom, dateTo: collectDateTo } = params;
+        const collectResults = await collectService.runFullProductionTest(collectDateFrom, collectDateTo);
+        
+        // Get the file path from the storage service
+        const storagePath = dataStorageService.getStorageDirectory();
+        const latestFile = `${collectResults.testType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.json`;
+        const filePath = `${storagePath}/${latestFile}`;
+        
+        return NextResponse.json({
+          success: true,
+          message: 'Data collection completed successfully',
+          data: {
+            ...collectResults,
+            filePath: filePath
+          }
+        });
+
       case 'run_labs_micro_test':
         // Import the DataForSEO Labs service (90% cheaper)
         const { dataForSEOLabsService } = await import('@/lib/dataforseo-labs-service');

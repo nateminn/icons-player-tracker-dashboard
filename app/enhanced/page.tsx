@@ -9,15 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { 
-  Menu, X, Download, Settings, RefreshCcw, TrendingUp, 
-  TrendingDown, Users, Globe, Target, BarChart3, Rocket 
+  Menu, X, Download, TrendingUp, 
+  TrendingDown, Users, Globe, Target, BarChart3, Upload
 } from "lucide-react";
 import { generateEnhancedPlayerData, marketsList } from '@/lib/market-data-generator';
-import { loadStoredAPIResults, transformAPIToDashboard } from '@/lib/api-data-transformer';
+import { transformAPIToDashboard } from '@/lib/api-data-transformer';
 
 // Dynamic import for Plotly to avoid SSR issues
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false });
@@ -40,7 +39,7 @@ interface PlayerData {
   opportunity_score: number;
   market_count: number;
   market: string;
-  markets: MarketData[]; // Required to match EnhancedPlayerData
+  markets: MarketData[];
   age: number;
   position: string;
   current_team: string;
@@ -48,2466 +47,560 @@ interface PlayerData {
 }
 
 export default function EnhancedDashboard() {
-  // Client-side mounting state to prevent hydration issues
-  const [isMounted, setIsMounted] = useState(false);
-  
-  // State
+  // Core state
   const [players, setPlayers] = useState<PlayerData[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [selectedMarkets, setSelectedMarkets] = useState<string[]>(["United Kingdom", "United States", "Germany", "Spain"]);
-  const [volumeRange, setVolumeRange] = useState<number[]>([0, 1000000]);
-  const [dataMonth] = useState(new Date());
-  const [topPlayersCount, setTopPlayersCount] = useState<number>(10);
-  const [heatmapPlayerCount, setHeatmapPlayerCount] = useState<number>(10);
-  const [selectedComparisonPlayers, setSelectedComparisonPlayers] = useState<string[]>([]);
-  const [playerSearchTerm, setPlayerSearchTerm] = useState<string>("");
-  const [showPlayerDropdown, setShowPlayerDropdown] = useState<boolean>(false);
-  const [sortBy, setSortBy] = useState<string>("volume");
-  const [tableSearchTerm, setTableSearchTerm] = useState<string>("");
-  const [showAllPlayers, setShowAllPlayers] = useState<boolean>(false);
-  const [selectedPlayerForAnalytics, setSelectedPlayerForAnalytics] = useState<string>("");
-  const [playerNameSearch, setPlayerNameSearch] = useState<string>("");
-  const [teamSearch, setTeamSearch] = useState<string>("");
-  
-  // DataForSEO integration state
-  const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
-  const [dataSource, setDataSource] = useState<"sample" | "dataforseo">("sample");
-  const [apiConnectionStatus, setApiConnectionStatus] = useState<"unknown" | "connected" | "error">("unknown");
-  const [microTestResults, setMicroTestResults] = useState<{
-    testType: string;
-    players: string[];
-    markets: string[];
-    keywordCount: number;
-    estimatedCost: number;
-    dateRange?: { from: string; to: string };
-    apiMode?: string;
-    results: Record<string, Array<{
-      keyword: string;
-      search_volume?: number;
-      competition?: string;
-      cpc?: number;
-    }>>;
-  } | null>(null);
-  
-  const [productionTestResults, setProductionTestResults] = useState<{
-    testType: string;
-    players: string[];
-    markets: string[];
-    keywordCount: number;
-    totalRequests: number;
-    estimatedCost: number;
-    dateRange?: { from: string; to: string };
-    apiMode: string;
-    progress: { current: number; total: number };
-    results: Record<string, Array<{
-      keyword: string;
-      search_volume?: number;
-      competition?: string;
-      cpc?: number;
-    }>>;
-  } | null>(null);
-  
-  // Date range state - default to July 2025 for executive report
-  const [dateRange, setDateRange] = useState<{from: string; to: string}>({
-    from: '2025-07-01',
-    to: '2025-07-31'
+  const [filteredPlayers, setFilteredPlayers] = useState<PlayerData[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [selectedMarkets, setSelectedMarkets] = useState<string[]>(["all"]);
+  const [volumeRange, setVolumeRange] = useState<[number, number]>([0, 1000000]);
+  const [opportunityRange, setOpportunityRange] = useState<[number, number]>([0, 100]);
+  const [sortBy, setSortBy] = useState<string>("total_volume");
+  const [sortOrder] = useState<"asc" | "desc">("desc");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [dateRange] = useState<{ from: Date; to: Date }>({
+    from: new Date("2024-07-01"),
+    to: new Date("2025-07-01")
   });
-  
-  // Detailed results view state
-  const [showDetailedResults, setShowDetailedResults] = useState<boolean>(false);
-  
-  // Sandbox mode state
-  const [sandboxMode, setSandboxMode] = useState<boolean>(true);
 
+  // Data collection and upload state
+  const [isCollectingData, setIsCollectingData] = useState<boolean>(false);
+  const [dataSource, setDataSource] = useState<"sample" | "uploaded">("sample");
+  const [collectionResults, setCollectionResults] = useState<{
+    filePath: string;
+    players: string[];
+    markets: string[];
+    keywordCount: number;
+    cost: number;
+    timestamp: string;
+  } | null>(null);
+  const [isDragOver, setIsDragOver] = useState<boolean>(false);
 
+  // Initialize with sample data
   useEffect(() => {
-    // Set mounted state for hydration
-    setIsMounted(true);
-    
-    // Load the enhanced player data with market-specific search demand
-    const enhancedData = generateEnhancedPlayerData();
-    setPlayers(enhancedData);
-    
-    // Set initial volume range based on aggregated market data
-    // Since we're filtering by markets, we need to calculate the range for selected markets
-    const initialSelectedMarkets = ["United Kingdom", "United States", "Germany", "Spain"];
-    const marketBasedVolumes = enhancedData.map(player => {
-      const selectedMarketData = player.markets?.filter(m => initialSelectedMarkets.includes(m.market)) || [];
-      return selectedMarketData.reduce((sum, m) => sum + m.volume, 0);
-    }).filter(vol => vol > 0);
-    
-    setVolumeRange([Math.min(...marketBasedVolumes), Math.max(...marketBasedVolumes)]);
-    
-    // Test API connection on load
-    testApiConnection();
+    const sampleData = generateEnhancedPlayerData();
+    setPlayers(sampleData);
+    setFilteredPlayers(sampleData);
+    updateVolumeRange(sampleData);
   }, []);
 
-  // Test DataForSEO API connection
-  const testApiConnection = async () => {
-    try {
-      const response = await fetch('/api/dataforseo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'test_connection'
-        }),
-      });
-
-      const result = await response.json();
-      setApiConnectionStatus(result.success ? "connected" : "error");
-    } catch (error) {
-      console.error("API connection test failed:", error);
-      setApiConnectionStatus("error");
-    }
+  // Update volume range based on data
+  const updateVolumeRange = (data: PlayerData[]) => {
+    if (data.length === 0) return;
+    const maxVolume = Math.max(...data.map(p => p.total_volume));
+    const minVolume = Math.min(...data.map(p => p.total_volume));
+    setVolumeRange([minVolume, maxVolume]);
   };
 
-  // Run micro test for merch keywords
-  const runMicroTest = async () => {
-    setIsLoadingData(true);
-    try {
-      console.log('🧪 Starting Micro Test - 5 players × 2 markets with merch terms...');
-      
-      const response = await fetch('/api/dataforseo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'run_micro_test',
-          dateFrom: dateRange.from,
-          dateTo: dateRange.to,
-          useSandbox: sandboxMode
-        }),
-      });
+  // Filter players based on criteria
+  useEffect(() => {
+    let filtered = [...players];
 
-      const result = await response.json();
-      
-      if (result.success) {
-        console.log('✅ Micro test completed!', result.data);
-        
-        // Check if API returned actual data (or if we're out of credits)
-        const hasData = Object.values(result.data.results || {}).some((keywords) => Array.isArray(keywords) && keywords.length > 0);
-        
-        if (!hasData && result.data.results) {
-          console.log('🎯 No API data available (credits exhausted), generating sample data for executive report demonstration');
-          const sampleResults = generateSampleMicroTestResults(result.data);
-          setMicroTestResults(sampleResults);
-          alert(`🎉 Micro Test Structure Completed!\n\n⚠️ API credits exhausted - showing sample data for demonstration.\n\nThis shows you exactly how your executive report will look with real data.\n\nFull functionality: View all 160 keywords + CSV download ready!`);
-        } else {
-          setMicroTestResults(result.data);
-          alert(`🎉 Micro Test Completed!\n\nTested ${result.data.keywordCount} merch keywords for ${result.data.players.length} players across ${result.data.markets.length} markets.\n\nEstimated cost: $${result.data.estimatedCost}\n\nResults now displayed below!`);
-        }
-      } else {
-        throw new Error(result.error || 'Micro test failed');
-      }
-    } catch (error) {
-      console.error("❌ Micro test failed:", error);
-      alert("Micro test failed. Check console for details.");
-    } finally {
-      setIsLoadingData(false);
-    }
-  };
-
-  const runFullProductionTest = async () => {
-    if (!window.confirm("FULL PRODUCTION TEST\n\nThis will process 18,750 keywords across 125 players × 30 merch terms × 5 markets.\n\nEstimated cost: ~$18.75\nEstimated time: ~30 minutes\n\nAre you sure you want to proceed?")) {
-      return;
-    }
-    
-    setIsLoadingData(true);
-    try {
-      console.log('🚀 Starting Full Production Test - 125 players × 30 merch terms × 5 markets...');
-      
-      const response = await fetch('/api/dataforseo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'run_full_production_test',
-          dateFrom: dateRange.from,
-          dateTo: dateRange.to
-        }),
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        console.log('✅ Full production test completed!', result.data);
-        setProductionTestResults(result.data);
-        alert(`Full Production Test Completed!\n\nProcessed ${result.data.keywordCount} keywords for ${result.data.players.length} players across ${result.data.markets.length} markets.\n\nTotal requests: ${result.data.totalRequests}\nActual cost: $${result.data.estimatedCost}\n\nResults now displayed below!`);
-      } else {
-        throw new Error(result.error || 'Full production test failed');
-      }
-    } catch (error) {
-      console.error("❌ Full production test failed:", error);
-      alert("Full production test failed. Check console for details.");
-    } finally {
-      setIsLoadingData(false);
-    }
-  };
-
-  const runLabsMicroTest = async () => {
-    setIsLoadingData(true);
-    try {
-      console.log('🧪 Starting Labs API Micro Test - 5 players × 2 markets × 30 terms...');
-      
-      const response = await fetch('/api/dataforseo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'run_labs_micro_test',
-          dateFrom: dateRange.from,
-          dateTo: dateRange.to,
-          useSandbox: sandboxMode
-        }),
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        console.log('✅ Labs micro test completed!', result.data);
-        setMicroTestResults(result.data);
-        alert(`🎉 Labs API Micro Test Completed!\n\nProcessed ${result.data.keywordCount} keywords for ${result.data.players.length} players.\n\nActual cost: $${result.data.actualCost.toFixed(3)} (90% cheaper!)\n\nResults now displayed below!`);
-      } else {
-        throw new Error(result.error || 'Labs micro test failed');
-      }
-    } catch (error) {
-      console.error("❌ Labs micro test failed:", error);
-      alert("Labs micro test failed. Check console for details.");
-    } finally {
-      setIsLoadingData(false);
-    }
-  };
-
-  const runLabsFullProductionTest = async () => {
-    if (!window.confirm("💰 LABS API FULL PRODUCTION TEST\n\nThis will process 18,750 keywords across 125 players × 30 merch terms × 5 markets.\n\nEstimated cost: ~$1.89 (90% CHEAPER than Google Ads API!)\nEstimated time: ~90 minutes\n\nAre you sure you want to proceed?")) {
-      return;
-    }
-    
-    setIsLoadingData(true);
-    try {
-      console.log('🚀 Starting Labs API Full Production Test - 90% cheaper!');
-      
-      const response = await fetch('/api/dataforseo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'run_labs_full_production_test',
-          dateFrom: dateRange.from,
-          dateTo: dateRange.to
-        }),
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        console.log('✅ Labs full production test completed!', result.data);
-        setProductionTestResults(result.data);
-        alert(`🎉 Labs API Production Test Completed!\n\nProcessed ${result.data.keywordCount} keywords for ${result.data.players.length} players across ${result.data.markets.length} markets.\n\nActual cost: $${result.data.actualCost.toFixed(2)} (saved ~$16.86!)\n\nResults now displayed below!`);
-      } else {
-        throw new Error(result.error || 'Labs full production test failed');
-      }
-    } catch (error) {
-      console.error("❌ Labs full production test failed:", error);
-      alert("Labs full production test failed. Check console for details.");
-    } finally {
-      setIsLoadingData(false);
-    }
-  };
-
-  // Fetch data from DataForSEO
-  const fetchDataFromAPI = async () => {
-    setIsLoadingData(true);
-    try {
-      // Use a subset of the most popular players from the final list for API testing
-      const popularPlayers = [
-        "Jude Bellingham",
-        "Bukayo Saka", 
-        "Cole Palmer",
-        "Phil Foden",
-        "Martin Odegaard",
-        "Pedri",
-        "Jamal Musiala",
-        "Vini Jr.",
-        "Rafael Leão",
-        "Florian Wirtz"
-      ];
-      
-      // For now, use sample data - batch player fetching needs to be implemented
-      // TODO: Implement batch API calls for multiple players
-      const sampleData = generateEnhancedPlayerData().filter(
-        player => popularPlayers.includes(player.name)
+    // Search filter
+    if (searchQuery) {
+      filtered = filtered.filter(player =>
+        player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        player.current_team.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        player.position.toLowerCase().includes(searchQuery.toLowerCase())
       );
-      setPlayers(sampleData);
-      setDataSource("dataforseo");
-      
-      // Update volume range based on new data
-      const volumes = sampleData.map(p => p.total_volume);
-      setVolumeRange([Math.min(...volumes), Math.max(...volumes)]);
-      
-    } catch (error) {
-      console.error("Error fetching data from API:", error);
-      alert("Failed to fetch data from DataForSEO. Using sample data instead.");
-    } finally {
-      setIsLoadingData(false);
     }
-  };
-  
-  // Generate CSV report for executive team
-  const generateCSVReport = (results: typeof microTestResults) => {
-    if (!results) return '';
-    
-    let csvContent = 'Market,Player,Keyword,Search Volume,Competition,CPC,Date Range\n';
-    
-    Object.entries(results.results || {}).forEach(([market, keywords]) => {
-      keywords.forEach((kw) => {
-        // Extract player name from keyword (assumes "Player Name + term" format)
-        const playerMatch = kw.keyword.match(/^([A-Za-z\s]+?)\s+(shirt|jersey|signed|autograph|memorabilia|boots|cleats|card|poster|authentic|official|framed|ball|collectibles|signature|coins|exclusive|dedication|artwork|art|sports|soccer|football|limited|edition|unique|one of a kind)/i);
-        const player = playerMatch ? playerMatch[1].trim() : 'Unknown';
-        
-        csvContent += `"${market}","${player}","${kw.keyword}",${kw.search_volume || 0},"${kw.competition || 'N/A'}",${kw.cpc || 0},"${results.dateRange?.from || 'Current'} to ${results.dateRange?.to || 'Current'}"\n`;
-      });
-    });
-    
-    return csvContent;
-  };
-  
-  // Generate comprehensive raw data export (JSON format)
-  const generateRawDataJSON = (results: typeof microTestResults | typeof productionTestResults) => {
-    if (!results) return '';
-    
-    const rawData = {
-      metadata: {
-        testType: results.testType,
-        apiMode: results.apiMode,
-        timestamp: new Date().toISOString(),
-        dateRange: results.dateRange,
-        totalPlayers: results.players.length,
-        totalMarkets: results.markets.length,
-        totalKeywords: results.keywordCount,
-        totalRequests: (results as { totalRequests?: number }).totalRequests || 'N/A',
-        estimatedCost: results.estimatedCost,
-        actualCost: (results as { actualCost?: number }).actualCost || results.estimatedCost
-      },
-      markets: results.markets,
-      players: results.players,
-      rawApiResults: results.results
-    };
-    
-    return JSON.stringify(rawData, null, 2);
-  };
-  
-  // Generate detailed CSV with all keyword data
-  const generateDetailedCSV = (results: typeof microTestResults | typeof productionTestResults) => {
-    if (!results) return '';
-    
-    let csvContent = 'Market,Player Name,Keyword,Search Volume,Competition Level,CPC ($),Monthly Trend,API Mode,Date Range\n';
-    
-    Object.entries(results.results || {}).forEach(([market, keywords]) => {
-      keywords.forEach((kw) => {
-        // Extract player name from keyword
-        const playerMatch = kw.keyword.match(/^([A-Za-z\s]+?)\s+(shirt|jersey|signed|autograph|memorabilia|boots|cleats|card|poster|authentic|official|framed|ball|collectibles|signature|coins|exclusive|dedication|artwork|art|sports|soccer|football|limited|edition)/i);
-        const player = playerMatch ? playerMatch[1].trim() : 'Unknown Player';
-        
-        const monthlySearches = (kw as { monthly_searches?: Array<{month: number; search_volume: number}> }).monthly_searches;
-        const monthlyTrend = monthlySearches ? 
-          monthlySearches.slice(-3).map((m: {month: number; search_volume: number}) => m.search_volume).join(';') : 
-          'N/A';
-          
-        csvContent += `"${market}","${player}","${kw.keyword}",${kw.search_volume || 0},"${kw.competition || 'N/A'}",${kw.cpc || 0},"${monthlyTrend}","${results.apiMode || 'Unknown'}","${results.dateRange?.from || 'Current'} to ${results.dateRange?.to || 'Current'}"\n`;
-      });
-    });
-    
-    return csvContent;
-  };
-  
-  // Download raw data as JSON file
-  const downloadRawJSON = (results: typeof microTestResults | typeof productionTestResults, filename: string) => {
-    const jsonData = generateRawDataJSON(results);
-    const blob = new Blob([jsonData], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-  
-  // Download detailed CSV
-  const downloadDetailedCSV = (results: typeof microTestResults | typeof productionTestResults, filename: string) => {
-    const csvData = generateDetailedCSV(results);
-    const blob = new Blob([csvData], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-  
-  // Generate sample data for demonstration when API credits are exhausted
-  const generateSampleMicroTestResults = (originalData: { testType: string; players: string[]; markets: string[]; keywordCount: number; estimatedCost: number; dateRange?: { from: string; to: string }; apiMode?: string; }) => {
-    const players = ["Federico Valverde", "Thibaut Courtois", "Dean Huijsen", "Arda Guler", "Pedri"];
-    const markets = ["United Kingdom", "United States"];
-    const merchTerms = ["shirt", "jersey", "signed shirt", "signed jersey", "signed", "autograph", "autographed", 
-      "memorabilia", "boots", "cleats", "card", "poster", "signed photo", "authentic", "official", 
-      "framed", "signed ball", "collectibles", "autographed shirt", "autographed jersey", 
-      "signature", "coins", "exclusive", "dedication", "artwork", "signed art", 
-      "sports memorabilia", "soccer memorabilia", "football memorabilia", "limited edition", 
-      "Unique", "One of a kind"];
 
-    const sampleResults: Record<string, Array<{ keyword: string; search_volume?: number; competition?: string; cpc?: number; }>> = {};
-    
-    markets.forEach(market => {
-      const keywords: Array<{ keyword: string; search_volume?: number; competition?: string; cpc?: number; }> = [];
-      players.forEach(player => {
-        merchTerms.forEach(term => {
-          // Generate realistic search volumes based on market
-          const baseVolume = market === "United States" ? 
-            Math.floor(Math.random() * 200) + 10 : // US: 10-210
-            Math.floor(Math.random() * 50) + 5;    // UK: 5-55
-          
-          // Add some standout keywords
-          let searchVolume = baseVolume;
-          if (term === "jersey" && player === "Federico Valverde") {
-            searchVolume = market === "United States" ? 170 : 10;
-          } else if (term === "shirt" && player === "Pedri") {
-            searchVolume = market === "United States" ? 85 : 25;
-          }
-          
-          keywords.push({
-            keyword: `${player} ${term}`,
-            search_volume: searchVolume,
-            competition: Math.random() > 0.5 ? "LOW" : Math.random() > 0.5 ? "MEDIUM" : "HIGH",
-            cpc: Math.round((Math.random() * 3 + 0.5) * 100) / 100 // $0.50 - $3.50
-          });
-        });
-      });
-      sampleResults[market] = keywords;
+    // Market filter
+    if (selectedMarkets.length > 0 && !selectedMarkets.includes("all")) {
+      filtered = filtered.filter(player =>
+        player.markets.some(market => selectedMarkets.includes(market.market))
+      );
+    }
+
+    // Volume filter
+    filtered = filtered.filter(player =>
+      player.total_volume >= volumeRange[0] && player.total_volume <= volumeRange[1]
+    );
+
+    // Opportunity filter
+    filtered = filtered.filter(player =>
+      player.opportunity_score >= opportunityRange[0] && player.opportunity_score <= opportunityRange[1]
+    );
+
+    // Sort
+    filtered.sort((a, b) => {
+      const aVal = a[sortBy as keyof PlayerData] as number;
+      const bVal = b[sortBy as keyof PlayerData] as number;
+      return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
     });
 
-    return {
-      ...originalData,
-      results: sampleResults
-    };
-  };
-  
-  // Download CSV file
-  const downloadCSV = (csvContent: string, filename: string) => {
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) {
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  };
+    setFilteredPlayers(filtered);
+  }, [players, searchQuery, selectedMarkets, volumeRange, opportunityRange, sortBy, sortOrder]);
 
-  // Load sample data
-  const loadSampleData = () => {
-    const enhancedData = generateEnhancedPlayerData();
-    setPlayers(enhancedData);
-    setDataSource("sample");
-    
-    // Reset volume range based on currently selected markets
-    const marketBasedVolumes = enhancedData.map(player => {
-      const selectedMarketData = player.markets?.filter(m => selectedMarkets.includes(m.market)) || [];
-      return selectedMarketData.reduce((sum, m) => sum + m.volume, 0);
-    }).filter(vol => vol > 0);
-    
-    if (marketBasedVolumes.length > 0) {
-      setVolumeRange([Math.min(...marketBasedVolumes), Math.max(...marketBasedVolumes)]);
-    }
-  };
-
-  // Load real API data
-  const loadRealAPIData = async () => {
+  // Collect all data from API
+  const collectAllData = async () => {
+    setIsCollectingData(true);
     try {
-      setIsLoadingData(true);
-      console.log('Loading real API data from storage...');
+      console.log('Starting full data collection...');
       
-      const apiResults = await loadStoredAPIResults();
-      console.log(`Found ${apiResults.length} stored API results`);
+      const response = await fetch('/api/dataforseo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'collect_all_data',
+          dateFrom: dateRange.from.toISOString().split('T')[0],
+          dateTo: dateRange.to.toISOString().split('T')[0]
+        }),
+      });
       
-      if (apiResults.length === 0) {
-        alert('No API data found. Please run a micro test first to generate data.');
-        return;
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('Data collection completed!', result.data);
+        setCollectionResults({
+          filePath: result.data.filePath,
+          players: result.data.players,
+          markets: result.data.markets,
+          keywordCount: result.data.keywordCount,
+          cost: result.data.actualCost,
+          timestamp: new Date().toISOString()
+        });
+        alert(`Data Collection Complete!\n\nFile saved to: ${result.data.filePath}\n\nPlayers: ${result.data.players.length}\nMarkets: ${result.data.markets.length}\nKeywords: ${result.data.keywordCount}\nCost: $${result.data.actualCost}\n\nReview the file and drag it back to upload.`);
+      } else {
+        throw new Error(result.error || 'Data collection failed');
       }
+    } catch (error) {
+      console.error("Data collection failed:", error);
+      alert("Data collection failed. Check console for details.");
+    } finally {
+      setIsCollectingData(false);
+    }
+  };
+
+  // Handle file drag and drop
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    const jsonFile = files.find(file => file.name.endsWith('.json'));
+    
+    if (jsonFile) {
+      uploadFile(jsonFile);
+    } else {
+      alert("Please drop a JSON data file.");
+    }
+  };
+
+  // Handle file upload
+  const uploadFile = async (file: File) => {
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
       
-      const dashboardData = transformAPIToDashboard(apiResults);
-      console.log(`Transformed to ${dashboardData.length} player records`);
+      // Transform API data to dashboard format
+      const dashboardData = transformAPIToDashboard([data]);
       
       if (dashboardData.length > 0) {
         setPlayers(dashboardData);
-        setDataSource("dataforseo");
+        setDataSource("uploaded");
+        updateVolumeRange(dashboardData);
         
-        // Update available markets based on real data
         const realMarkets = [...new Set(dashboardData.flatMap(p => p.markets.map(m => m.market)))];
-        setSelectedMarkets(realMarkets.slice(0, 4)); // Select first 4 markets
-        
-        // Reset volume range based on real data
-        const realVolumes = dashboardData.map(p => p.total_volume).filter(vol => vol > 0);
-        if (realVolumes.length > 0) {
-          setVolumeRange([Math.min(...realVolumes), Math.max(...realVolumes)]);
-        }
-        
-        console.log('✅ Successfully loaded real API data into dashboard');
-        alert(`Loaded ${dashboardData.length} players from real API data!\n\nMarkets: ${realMarkets.join(', ')}\nTotal players: ${dashboardData.length}`);
+        console.log('Successfully uploaded data for', dashboardData.length, 'players');
+        alert(`Upload Complete!\n\nLoaded ${dashboardData.length} players\nMarkets: ${realMarkets.join(', ')}`);
       } else {
-        alert('No player data could be extracted from API results. Data may need processing.');
+        alert('No player data could be extracted from the file.');
       }
     } catch (error) {
-      console.error('Failed to load real API data:', error);
-      alert('Failed to load real API data. Check console for details.');
-    } finally {
-      setIsLoadingData(false);
+      console.error('File upload failed:', error);
+      alert('File upload failed. Please check the file format.');
     }
   };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = () => {
-      setShowPlayerDropdown(false);
-    };
+  // CSV Export functions
+  const downloadCSV = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const generatePlayerCSV = () => {
+    let csv = 'Player Name,Total Volume,Player Volume,Merch Volume,Opportunity Score,Market Count,Primary Market,Age,Position,Team,Nationality,Trend %\n';
     
-    if (showPlayerDropdown) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-  }, [showPlayerDropdown]);
-
-  // Filter and aggregate data based on selected markets
-  const filteredData = players
-    .map(player => {
-      // Aggregate search volume data for selected markets only
-      const selectedMarketData = player.markets?.filter(m => selectedMarkets.includes(m.market)) || [];
-      
-      if (selectedMarketData.length === 0) {
-        // If no market data available, return null to filter out
-        return null;
-      }
-      
-      // Calculate aggregated metrics for selected markets
-      const aggregatedVolume = selectedMarketData.reduce((sum, m) => sum + m.volume, 0);
-      const aggregatedPlayerVolume = selectedMarketData.reduce((sum, m) => sum + m.player_volume, 0);
-      const aggregatedMerchVolume = selectedMarketData.reduce((sum, m) => sum + m.merch_volume, 0);
-      const avgTrend = selectedMarketData.length > 0 
-        ? selectedMarketData.reduce((sum, m) => sum + m.trend_percent, 0) / selectedMarketData.length 
-        : 0;
-      
-      // Find primary market among selected ones
-      const primaryMarket = selectedMarketData.reduce((max, current) => 
-        current.volume > max.volume ? current : max
-      );
-      
-      return {
-        ...player,
-        total_volume: aggregatedVolume,
-        player_volume: aggregatedPlayerVolume,
-        merch_volume: aggregatedMerchVolume,
-        trend_percent: Number(avgTrend.toFixed(1)),
-        market: primaryMarket.market,
-        market_count: selectedMarketData.length
-      };
-    })
-    .filter((player): player is NonNullable<typeof player> => 
-      player !== null && 
-      player.total_volume >= volumeRange[0] && 
-      player.total_volume <= volumeRange[1]
-    );
-
-  // Sort filtered data based on selected sort option
-  const sortedData = [...filteredData].sort((a, b) => {
-    switch (sortBy) {
-      case 'volume':
-        return b.total_volume - a.total_volume;
-      case 'trend':
-        return b.trend_percent - a.trend_percent;
-      case 'opportunity':
-        return b.opportunity_score - a.opportunity_score;
-      case 'name':
-        return a.name.localeCompare(b.name);
-      default:
-        return b.total_volume - a.total_volume;
-    }
-  });
-
-  // Filter sorted data for table search
-  const tableFilteredData = sortedData.filter(player =>
-    player.name.toLowerCase().includes(tableSearchTerm.toLowerCase()) ||
-    player.current_team.toLowerCase().includes(tableSearchTerm.toLowerCase()) ||
-    player.nationality.toLowerCase().includes(tableSearchTerm.toLowerCase()) ||
-    player.position.toLowerCase().includes(tableSearchTerm.toLowerCase())
-  );
-
-  // Calculate KPIs
-  const totalVolume = filteredData.reduce((sum, p) => sum + p.total_volume, 0);
-  const avgVolumePerPlayer = filteredData.length > 0 ? totalVolume / filteredData.length : 0;
-  const avgTrend = filteredData.length > 0 ? filteredData.reduce((sum, p) => sum + p.trend_percent, 0) / filteredData.length : 0;
-  
-  // Top market calculation
-  const marketVolumes = filteredData.reduce((acc, player) => {
-    acc[player.market] = (acc[player.market] || 0) + player.total_volume;
-    return acc;
-  }, {} as Record<string, number>);
-  const topMarket = Object.entries(marketVolumes).reduce((a, b) => a[1] > b[1] ? a : b, ['N/A', 0]);
-
-  // Prepare chart data
-  const topPlayersData = filteredData
-    .sort((a, b) => b.total_volume - a.total_volume)
-    .slice(0, topPlayersCount)
-    .map(p => ({
-      player: p.name,
-      volume: p.total_volume,
-      trend: p.trend_percent
-    }));
-
-  const marketDistributionData = Object.entries(marketVolumes).map(([market, volume]) => ({
-    market,
-    volume
-  }));
-
-
-  // Function to determine if a player should have a text label (isolated enough)
-  const shouldShowLabel = (player: PlayerData, allPlayers: PlayerData[]) => {
-    const minDistance = 50000; // Minimum volume distance to avoid overlap
-    const minTrendDistance = 8; // Minimum trend distance to avoid overlap
+    filteredPlayers.forEach(player => {
+      csv += `"${player.name}",${player.total_volume},${player.player_volume},${player.merch_volume},${player.opportunity_score},${player.market_count},"${player.market}",${player.age},"${player.position}","${player.current_team}","${player.nationality}",${player.trend_percent.toFixed(2)}\n`;
+    });
     
-    const nearby = allPlayers.filter(other => 
-      other.id !== player.id &&
-      Math.abs(other.total_volume - player.total_volume) < minDistance &&
-      Math.abs(other.trend_percent - player.trend_percent) < minTrendDistance
-    );
-    
-    return nearby.length === 0;
+    return csv;
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Streamlit-style Sidebar */}
-      <div className={`${sidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 overflow-hidden bg-white shadow-lg`}>
-        <div className="p-6 h-full overflow-y-auto">
+    <div className="min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-800">📊 Dashboard Controls</h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden"
-            >
+            <h2 className="text-xl font-bold text-gray-900">Data Controls</h2>
+            <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          {/* Data Source Section */}
+          {/* Data Source */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold mb-3 text-gray-700">Data Source</h3>
+            <div className="text-xs text-gray-500 mb-2">Current Source:</div>
+            <Badge variant={dataSource === "uploaded" ? "default" : "secondary"}>
+              {dataSource === "uploaded" ? "Uploaded Data" : "Sample Data"}
+            </Badge>
+          </div>
+
+          {/* Data Collection */}
+          <div className="mb-6 p-4 border border-blue-200 rounded-lg bg-blue-50">
+            <h3 className="font-medium text-blue-800 mb-3">Data Collection</h3>
             
-            {/* API Connection Status */}
-            <div className="mb-3 p-2 rounded-md bg-gray-50">
-              <div className="flex items-center gap-2">
-                <div className={`h-2 w-2 rounded-full ${
-                  apiConnectionStatus === "connected" ? "bg-green-500" : 
-                  apiConnectionStatus === "error" ? "bg-red-500" : "bg-yellow-500"
-                }`} />
-                <span className="text-xs text-gray-600">
-                  DataForSEO API: {
-                    apiConnectionStatus === "connected" ? "Connected" :
-                    apiConnectionStatus === "error" ? "Error" : "Testing..."
-                  }
-                </span>
-              </div>
-            </div>
+            <Button 
+              className="w-full mb-3" 
+              onClick={collectAllData}
+              disabled={isCollectingData}
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              {isCollectingData ? 'Collecting Data...' : 'Collect All Data'}
+            </Button>
 
-            {/* Current Data Source */}
-            <div className="mb-3 p-2 rounded-md border">
-              <div className="text-xs text-gray-500 mb-1">Current Source:</div>
-              <div className="flex items-center gap-2">
-                <Badge variant={dataSource === "dataforseo" ? "default" : "secondary"}>
-                  {dataSource === "dataforseo" ? "📊 DataForSEO API" : "🎮 Sample Data"}
-                </Badge>
-                <span className="text-xs text-gray-500">
-                  ({players.length} players)
-                </span>
-              </div>
-            </div>
-            
-            <div className="space-y-3">
-              <Button 
-                className="w-full" 
-                variant={dataSource === "dataforseo" ? "default" : "outline"}
-                onClick={fetchDataFromAPI}
-                disabled={isLoadingData || apiConnectionStatus === "error"}
-              >
-                {isLoadingData ? (
-                  <>
-                    <RefreshCcw className="h-4 w-4 mr-2 animate-spin" />
-                    Fetching API Data...
-                  </>
-                ) : (
-                  <>
-                    <Globe className="h-4 w-4 mr-2" />
-                    Fetch from DataForSEO
-                  </>
-                )}
-              </Button>
-              
-              <Button 
-                className="w-full" 
-                variant={dataSource === "sample" ? "default" : "outline"}
-                onClick={loadSampleData}
-                disabled={isLoadingData}
-              >
-                <RefreshCcw className="h-4 w-4 mr-2" />
-                Load Sample Data
-              </Button>
-              
-              <Button 
-                className="w-full" 
-                variant={dataSource === "dataforseo" ? "default" : "outline"}
-                onClick={loadRealAPIData}
-                disabled={isLoadingData}
-              >
-                <BarChart3 className="h-4 w-4 mr-2" />
-                Load Stored API Data
-              </Button>
-              
-              <Button 
-                className="w-full" 
-                variant="outline" 
-                onClick={testApiConnection}
-                disabled={isLoadingData}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Test API Connection
-              </Button>
-
-              {apiConnectionStatus === "connected" && (
-                <>
-                  {/* Sandbox Mode Toggle */}
-                  <div className="mt-3 p-3 rounded-md bg-purple-50 border border-purple-200">
-                    <div className="text-xs font-medium text-purple-700 mb-2">🔧 API Testing Mode</div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setSandboxMode(!sandboxMode)}
-                        className={`flex items-center gap-2 px-3 py-1 rounded text-xs transition-colors ${
-                          sandboxMode 
-                            ? 'bg-purple-600 text-white' 
-                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
-                      >
-                        <div className={`w-2 h-2 rounded-full ${sandboxMode ? 'bg-white' : 'bg-red-500'}`} />
-                        {sandboxMode ? '🧪 Sandbox Mode (Free Testing)' : '💰 Live Mode (Uses Credits)'}
-                      </button>
-                    </div>
-                    <div className="text-xs text-purple-600 mt-1">
-                      {sandboxMode 
-                        ? 'Unlimited free testing with sample data patterns' 
-                        : 'Uses actual API credits - real search volume data'}
-                    </div>
-                  </div>
-                  
-                  {/* Date Range Controls */}
-                  <div className="mt-3 p-3 rounded-md bg-blue-50 border border-blue-200">
-                    <div className="text-xs font-medium text-blue-700 mb-2">📅 Executive Report Date Range</div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-xs text-gray-600 block mb-1">From:</label>
-                        <input
-                          type="date"
-                          value={dateRange.from}
-                          onChange={(e) => setDateRange(prev => ({...prev, from: e.target.value}))}
-                          className="w-full text-xs p-1 border rounded"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-600 block mb-1">To:</label>
-                        <input
-                          type="date"
-                          value={dateRange.to}
-                          onChange={(e) => setDateRange(prev => ({...prev, to: e.target.value}))}
-                          className="w-full text-xs p-1 border rounded"
-                        />
-                      </div>
-                    </div>
-                    <div className="text-xs text-blue-600 mt-1">
-                      Default: July 2025 (for executive report)
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    className="w-full mt-3"
-                    variant="default" 
-                    onClick={runMicroTest}
-                    disabled={isLoadingData}
-                    style={{ backgroundColor: sandboxMode ? '#7c3aed' : '#16a34a', color: 'white' }}
-                  >
-                    <Target className="h-4 w-4 mr-2" />
-                    {sandboxMode ? '🧪' : '💰'} Run Micro Test ({sandboxMode ? 'Sandbox' : 'Live'}) - {dateRange.from} to {dateRange.to} 
-                    {!sandboxMode ? ' ($0.05)' : ' (Free)'}
-                  </Button>
-                  
-                  {/* Full Production Test Button */}
-                  <div className="mt-3 p-3 rounded-md bg-red-50 border border-red-200">
-                    <div className="text-xs font-medium text-red-700 mb-2">🚀 Full Production Test</div>
-                    <div className="text-xs text-red-600 mb-3">
-                      125 players × 30 merch terms × 5 markets = 18,750 keywords<br/>
-                      Estimated cost: ~$18.75 (375 requests × $0.05)
-                    </div>
-                    <Button 
-                      className="w-full"
-                      variant="destructive" 
-                      onClick={runFullProductionTest}
-                      disabled={isLoadingData || sandboxMode}
-                    >
-                      <Rocket className="h-4 w-4 mr-2" />
-                      🚀 Run Full Production Test ($18.75)
-                    </Button>
-                    {sandboxMode && (
-                      <div className="text-xs text-gray-500 mt-2">
-                        Switch to Live Mode to run production test
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* DataForSEO Labs API - 90% Cheaper Option */}
-                  <div className="mt-4 p-3 rounded-md bg-green-50 border border-green-200">
-                    <div className="text-xs font-medium text-green-700 mb-2">💰 DataForSEO Labs API (90% CHEAPER!)</div>
-                    <div className="text-xs text-green-600 mb-3">
-                      Micro Test: 300 keywords = ~$0.03 (vs $0.10)<br/>
-                      Full Production: 18,750 keywords = ~$1.89 (vs $18.75)
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Button 
-                        className="w-full"
-                        variant="default"
-                        onClick={runLabsMicroTest}
-                        disabled={isLoadingData}
-                        style={{ backgroundColor: '#059669', color: 'white' }}
-                      >
-                        <Target className="h-4 w-4 mr-2" />
-                        💚 Run Labs Micro Test (~$0.03)
-                      </Button>
-                      
-                      <Button 
-                        className="w-full"
-                        variant="default"
-                        onClick={runLabsFullProductionTest}
-                        disabled={isLoadingData || sandboxMode}
-                        style={{ backgroundColor: '#047857', color: 'white' }}
-                      >
-                        <Rocket className="h-4 w-4 mr-2" />
-                        💚 Run Labs Full Production (~$1.89)
-                      </Button>
-                      
-                      {sandboxMode && (
-                        <div className="text-xs text-gray-500 mt-1">
-                          Switch to Live Mode to run Labs production test
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            {/* API Usage Warning */}
-            {apiConnectionStatus === "connected" && (
-              <div className="mt-3 p-2 rounded-md bg-yellow-50 border border-yellow-200">
-                <div className="text-xs text-yellow-700">
-                  ⚠️ Using DataForSEO ${process.env.DATAFORSEO_USE_SANDBOX === 'true' ? 'Sandbox' : 'Live API'}.
-                  {process.env.DATAFORSEO_USE_SANDBOX === 'true' ? ' Free sandbox data.' : ' Live requests cost credits.'}
+            {collectionResults && (
+              <div className="mt-3 p-3 bg-white rounded border text-sm">
+                <div className="font-medium text-green-600 mb-2">Collection Complete</div>
+                <div className="space-y-1 text-xs text-gray-600">
+                  <div>File: {collectionResults.filePath}</div>
+                  <div>Players: {collectionResults.players.length}</div>
+                  <div>Markets: {collectionResults.markets.length}</div>
+                  <div>Keywords: {collectionResults.keywordCount}</div>
+                  <div>Cost: ${collectionResults.cost}</div>
                 </div>
-              </div>
-            )}
-
-            {/* Micro Test Results */}
-            {microTestResults && (
-              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-                <h4 className="font-medium text-green-800 mb-2">
-                  {microTestResults.apiMode === 'Sandbox' ? '🧪' : '💰'} Micro Test Results ({microTestResults.apiMode || 'API'} Mode)
-                </h4>
-                <div className="text-sm text-green-700 space-y-1">
-                  <p><strong>Players:</strong> {microTestResults.players.join(', ')}</p>
-                  <p><strong>Markets:</strong> {microTestResults.markets.join(', ')}</p>
-                  <p><strong>Keywords tested:</strong> {microTestResults.keywordCount}</p>
-                  <p><strong>Date Range:</strong> {microTestResults.dateRange 
-                    ? `${microTestResults.dateRange.from} to ${microTestResults.dateRange.to}` 
-                    : 'Current + 12 months historical'}</p>
-                  <p><strong>Cost:</strong> ${microTestResults.estimatedCost}</p>
-                </div>
-                
-                {/* Results Summary and Toggle */}
-                <div className="mt-3 flex gap-2 flex-wrap">
-                  <button
-                    onClick={() => setShowDetailedResults(!showDetailedResults)}
-                    className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                  >
-                    {showDetailedResults ? '📊 Hide Full Report' : '📋 View Full Executive Report'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      const csvContent = generateCSVReport(microTestResults);
-                      downloadCSV(csvContent, `Executive-Report-${microTestResults.dateRange?.from || 'current'}.csv`);
-                    }}
-                    className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
-                  >
-                    📄 Basic CSV
-                  </button>
-                  <button
-                    onClick={() => downloadDetailedCSV(microTestResults, `Detailed-Report-${microTestResults.dateRange?.from || 'current'}.csv`)}
-                    className="px-3 py-1 bg-emerald-500 text-white text-xs rounded hover:bg-emerald-600"
-                  >
-                    📊 Detailed CSV
-                  </button>
-                  <button
-                    onClick={() => downloadRawJSON(microTestResults, `Raw-Data-${microTestResults.dateRange?.from || 'current'}.json`)}
-                    className="px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600"
-                  >
-                    🔧 Raw JSON Data
-                  </button>
-                </div>
-
-                {/* Sample results for each market */}
-                {Object.entries(microTestResults.results || {}).map(([market, keywords]) => (
-                  <div key={market} className="mt-3 p-2 bg-white rounded border">
-                    <p className="font-medium text-sm">{market} - {showDetailedResults ? 'All Keywords' : 'Top Keywords'}:</p>
-                    <div className="text-xs space-y-1 mt-1">
-                      {showDetailedResults ? (
-                        // Show all keywords in detailed view
-                        <div className="max-h-96 overflow-y-auto">
-                          <div className="grid gap-1">
-                            {keywords
-                              .sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))
-                              .map((kw, i: number) => (
-                                <div key={i} className="flex justify-between py-1 border-b border-gray-100 hover:bg-gray-50">
-                                  <span className="font-mono">&quot;{kw.keyword}&quot;</span>
-                                  <div className="flex gap-4 text-right">
-                                    <span className="text-blue-600 font-medium">
-                                      {kw.search_volume?.toLocaleString() || 0} searches/month
-                                    </span>
-                                    <span className="text-gray-500 w-12">
-                                      {kw.competition || 'N/A'}
-                                    </span>
-                                    <span className="text-green-600 w-16">
-                                      ${kw.cpc?.toFixed(2) || '0.00'} CPC
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                          </div>
-                        </div>
-                      ) : (
-                        // Show top 3 keywords in summary view
-                        keywords
-                          .sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))
-                          .slice(0, 3)
-                          .map((kw, i: number) => (
-                            <div key={i} className="flex justify-between">
-                              <span>&quot;{kw.keyword}&quot;</span>
-                              <span>{kw.search_volume?.toLocaleString() || 0} searches/month</span>
-                            </div>
-                          ))
-                      )}
-                    </div>
-                    {!showDetailedResults && keywords.length > 3 && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        ...and {keywords.length - 3} more keywords
-                      </div>
-                    )}
-                  </div>
-                ))}
-                
-                <button 
-                  onClick={() => setMicroTestResults(null)}
-                  className="mt-2 text-xs text-green-600 hover:text-green-800"
-                >
-                  Hide Results
-                </button>
-              </div>
-            )}
-
-            {/* Full Production Test Results */}
-            {productionTestResults && (
-              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                <h4 className="font-medium text-red-800 mb-2">
-                  🚀 Full Production Test Results (Live Mode)
-                </h4>
-                <div className="text-sm text-red-700 space-y-1">
-                  <p><strong>Players:</strong> {productionTestResults.players.length} total</p>
-                  <p><strong>Markets:</strong> {productionTestResults.markets.join(', ')}</p>
-                  <p><strong>Keywords processed:</strong> {productionTestResults.keywordCount?.toLocaleString()}</p>
-                  <p><strong>Total API requests:</strong> {productionTestResults.totalRequests}</p>
-                  <p><strong>Date Range:</strong> {productionTestResults.dateRange 
-                    ? `${productionTestResults.dateRange.from} to ${productionTestResults.dateRange.to}` 
-                    : 'Current + 12 months historical'}</p>
-                  <p><strong>Total Cost:</strong> ${productionTestResults.estimatedCost?.toFixed(2)}</p>
-                  <p><strong>Progress:</strong> {productionTestResults.progress?.current?.toLocaleString()} / {productionTestResults.progress?.total?.toLocaleString()} keywords completed</p>
-                </div>
-                
-                {/* Results Summary */}
-                <div className="mt-3">
-                  <div className="text-sm font-medium text-red-800 mb-2">Market Results Summary:</div>
-                  {Object.entries(productionTestResults.results || {}).map(([market, keywords]) => (
-                    <div key={market} className="mb-2 p-2 bg-white rounded border">
-                      <p className="font-medium text-sm">{market}:</p>
-                      <div className="text-xs space-y-1 mt-1">
-                        <p><strong>Total keywords with data:</strong> {keywords.length}</p>
-                        <p><strong>Top performing keyword:</strong> {
-                          keywords.length > 0 
-                            ? `"${keywords.sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))[0].keyword}" (${keywords[0].search_volume?.toLocaleString() || 0} searches/month)`
-                            : 'No data available'
-                        }</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Production Test Export Options */}
-                <div className="mt-4 p-3 bg-white rounded border">
-                  <div className="text-sm font-medium text-red-800 mb-2">📥 Export Production Data</div>
-                  <div className="flex gap-2 flex-wrap">
-                    <button
-                      onClick={() => downloadDetailedCSV(productionTestResults, `Production-Detailed-${productionTestResults.dateRange?.from || 'current'}.csv`)}
-                      className="px-3 py-1 bg-emerald-500 text-white text-xs rounded hover:bg-emerald-600"
-                    >
-                      📊 Full CSV Report
-                    </button>
-                    <button
-                      onClick={() => downloadRawJSON(productionTestResults, `Production-Raw-Data-${productionTestResults.dateRange?.from || 'current'}.json`)}
-                      className="px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600"
-                    >
-                      🔧 Complete Raw JSON
-                    </button>
-                    <button
-                      onClick={() => {
-                        // Open raw data in new window for viewing
-                        const rawData = generateRawDataJSON(productionTestResults);
-                        const newWindow = window.open('', '_blank');
-                        if (newWindow) {
-                          newWindow.document.write(`<html><head><title>Raw API Data</title></head><body><pre>${rawData}</pre></body></html>`);
-                          newWindow.document.close();
-                        }
-                      }}
-                      className="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
-                    >
-                      👁️ View Raw Data
-                    </button>
-                  </div>
-                  <div className="text-xs text-gray-600 mt-2">
-                    Raw JSON includes all API response data, metadata, timestamps, and request details
-                  </div>
-                </div>
-                
-                <button 
-                  onClick={() => setProductionTestResults(null)}
-                  className="mt-2 text-xs text-red-600 hover:text-red-800"
-                >
-                  Hide Results
-                </button>
               </div>
             )}
           </div>
 
-          <div className="border-t pt-6">
-            <h3 className="text-lg font-semibold mb-4 text-gray-700">🔍 Filters</h3>
+          {/* File Upload */}
+          <div className="mb-6">
+            <h3 className="font-medium mb-3">Manual Upload</h3>
             
-            {/* Market Filter */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2 text-gray-700">Select Markets:</label>
-              <div className="flex gap-2 mb-3">
-                <button
-                  onClick={() => setSelectedMarkets(marketsList)}
-                  className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                >
-                  Select All
-                </button>
-                <button
-                  onClick={() => setSelectedMarkets([])}
-                  className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
-                >
-                  Unselect All
-                </button>
+            <div 
+              className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                isDragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300 bg-gray-50'
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+              <div className="text-sm text-gray-600">
+                Drop JSON data file here
               </div>
-              <div className="space-y-2 max-h-32 overflow-y-auto">
-                {marketsList.map(market => (
-                  <div key={market} className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={selectedMarkets.includes(market)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedMarkets([...selectedMarkets, market]);
-                        } else {
-                          setSelectedMarkets(selectedMarkets.filter(m => m !== market));
-                        }
-                      }}
-                    />
-                    <label className="text-sm text-gray-700">{market}</label>
-                  </div>
-                ))}
+              <div className="text-xs text-gray-400 mt-1">
+                Review data quality before upload
               </div>
             </div>
+          </div>
 
+          {/* Filters */}
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Search</label>
+              <Input
+                placeholder="Search players..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
 
-            {/* Volume Range Slider */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-2 text-gray-700">
-                Search Volume Range: {volumeRange[0].toLocaleString()} - {volumeRange[1].toLocaleString()}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Markets</label>
+              <Select value={selectedMarkets[0]} onValueChange={(value) => setSelectedMarkets(value === "all" ? ["all"] : [value])}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Markets</SelectItem>
+                  {marketsList.map((market) => (
+                    <SelectItem key={market} value={market}>{market}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Volume Range: {volumeRange[0].toLocaleString()} - {volumeRange[1].toLocaleString()}
               </label>
               <Slider
                 value={volumeRange}
-                onValueChange={setVolumeRange}
-                min={0}
+                onValueChange={(value) => setVolumeRange(value as [number, number])}
                 max={1000000}
                 step={10000}
-                className="mt-2"
+                className="w-full"
               />
             </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">
+                Opportunity Score: {opportunityRange[0]} - {opportunityRange[1]}
+              </label>
+              <Slider
+                value={opportunityRange}
+                onValueChange={(value) => setOpportunityRange(value as [number, number])}
+                max={100}
+                step={1}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          {/* Export */}
+          <div className="mt-6 pt-4 border-t">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => downloadCSV(generatePlayerCSV(), `player-data-${format(new Date(), 'yyyy-MM-dd')}.csv`)}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-auto">
+      <div className={`transition-margin duration-300 ease-in-out ${sidebarOpen ? 'ml-80' : 'ml-0'}`}>
         {/* Header */}
-        <div className="bg-white border-gray-200 shadow-sm border-b p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-              >
-                <Menu className="h-4 w-4" />
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-black">
-                  Icons Player Demand Tracker
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  Global Search Demand Analysis • {format(dataMonth, 'MMMM yyyy')}
-                </p>
+        <header className="bg-white shadow-sm border-b">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                >
+                  <Menu className="h-5 w-5" />
+                </Button>
+                <h1 className="text-2xl font-bold text-gray-900">Football Player Merchandise Dashboard</h1>
+              </div>
+              <div className="flex items-center space-x-4">
+                <Badge variant="outline">July 2025 Data</Badge>
+                <Badge variant="secondary">{filteredPlayers.length} Players</Badge>
               </div>
             </div>
-            
-            <div className="flex gap-3 items-center">
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV
-              </Button>
-              <Button variant="outline">
-                📧 Email Report
-              </Button>
-            </div>
           </div>
-        </div>
+        </header>
 
-        <div className="p-6 bg-gray-50">
-          {/* Enhanced KPI Cards - Compact Style */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-3">
-            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white h-20">
-              <CardContent className="!p-2 !pl-4 h-full flex items-center">
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex-1 min-h-0">
-                    <p className="text-blue-100 text-xs font-medium mb-1">Total Search Volume</p>
-                    <p className="text-lg font-bold leading-none mb-1">{(totalVolume / 1000000).toFixed(1)}M</p>
-                    <div className="flex items-center">
-                      {avgTrend >= 0 ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
-                      <span className="text-xs">{avgTrend >= 0 ? '+' : ''}{avgTrend.toFixed(1)}% avg trend</span>
-                    </div>
-                  </div>
-                  <BarChart3 className="h-6 w-6 text-blue-200 ml-2 flex-shrink-0" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white h-20">
-              <CardContent className="!p-2 !pl-4 h-full flex items-center">
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex-1 min-h-0">
-                    <p className="text-green-100 text-xs font-medium mb-1">Avg Volume per Player</p>
-                    <p className="text-lg font-bold leading-none mb-1">{Math.round(avgVolumePerPlayer / 1000)}K</p>
-                    <p className="text-green-200 text-xs">Across selected markets</p>
-                  </div>
-                  <Users className="h-6 w-6 text-green-200 ml-2 flex-shrink-0" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white h-20">
-              <CardContent className="!p-2 !pl-4 h-full flex items-center">
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex-1 min-h-0">
-                    <p className="text-purple-100 text-xs font-medium mb-1">Top Market</p>
-                    <p className="text-lg font-bold leading-none mb-1">{topMarket[0]}</p>
-                    <p className="text-purple-200 text-xs">{(topMarket[1] / 1000).toFixed(0)}K searches</p>
-                  </div>
-                  <Globe className="h-6 w-6 text-purple-200 ml-2 flex-shrink-0" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white h-20">
-              <CardContent className="!p-2 !pl-4 h-full flex items-center">
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex-1 min-h-0">
-                    <p className="text-orange-100 text-xs font-medium mb-1">Total Players Tracked</p>
-                    <p className="text-lg font-bold leading-none mb-1">{filteredData.length}</p>
-                    <p className="text-orange-200 text-xs">Players analyzed</p>
-                  </div>
-                  <Target className="h-6 w-6 text-orange-200 ml-2 flex-shrink-0" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Enhanced Tabs matching Streamlit structure */}
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="bg-white border border-gray-200">
-              <TabsTrigger value="overview">📈 Overview</TabsTrigger>
-              <TabsTrigger value="data">📊 Total Player Data</TabsTrigger>
-              <TabsTrigger value="analytics">👤 Individual Player Data</TabsTrigger>
-              <TabsTrigger value="analysis">📋 API Data Analysis</TabsTrigger>
-              <TabsTrigger value="heatmap">🌍 Heatmap</TabsTrigger>
-              <TabsTrigger value="comparisons">⚖️ Comparisons</TabsTrigger>
-              <TabsTrigger value="opportunities">🎯 Opportunities</TabsTrigger>
+        {/* Dashboard Content */}
+        <main className="p-6">
+          <Tabs defaultValue="overview" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="players">Players</TabsTrigger>
+              <TabsTrigger value="markets">Markets</TabsTrigger>
+              <TabsTrigger value="trends">Trends</TabsTrigger>
             </TabsList>
 
-            {/* Overview Tab with Plotly Charts */}
+            {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Interactive Bar Chart */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <Card>
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle>Top Players by Search Volume</CardTitle>
-                      <Select value={topPlayersCount.toString()} onValueChange={(value) => setTopPlayersCount(parseInt(value))}>
-                        <SelectTrigger className="w-20">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="5">5</SelectItem>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="25">25</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Players</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    {isMounted && (
-                      // @ts-expect-error - Plotly type definitions conflict
-                      <Plot
-                        data={[{
-                          type: 'bar' as const,
-                          x: topPlayersData.map(d => d.volume),
-                          y: topPlayersData.map(d => d.player),
-                          orientation: 'h' as const,
-                          marker: {
-                            color: 'rgba(59, 130, 246, 0.8)',
-                            line: { color: 'rgba(59, 130, 246, 1)', width: 1 }
-                          },
-                          hovertemplate: '<b>%{y}</b><br>Volume: %{x:,.0f}<extra></extra>',
-                          name: ''
-                        }]}
-                        layout={{
-                          height: Math.max(400, topPlayersCount * 20), // Dynamic height: 20px per player, minimum 400px
-                          margin: { t: 20, r: 20, b: 40, l: 150 },
-                          xaxis: { title: 'Search Volume' },
-                          yaxis: { 
-                            title: '', 
-                            automargin: true,
-                            tickfont: {
-                              size: Math.max(8, 14 - (topPlayersCount / 5)) // Smaller font for more players
-                            }
-                          },
-                          hovermode: 'closest' as const,
-                          plot_bgcolor: 'rgba(0,0,0,0)',
-                          paper_bgcolor: 'rgba(0,0,0,0)'
-                        }}
-                        config={{ displayModeBar: false }}
-                        style={{ width: '100%', height: `${Math.max(400, topPlayersCount * 20)}px` }}
-                      />
-                    )}
+                    <div className="text-2xl font-bold">{filteredPlayers.length}</div>
                   </CardContent>
                 </Card>
 
-                {/* Interactive Pie Chart */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Market Distribution</CardTitle>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Volume</CardTitle>
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    {isMounted && (
-                      <Plot
-                        data={[{
-                          type: 'pie' as const,
-                          labels: marketDistributionData.map(d => d.market),
-                          values: marketDistributionData.map(d => d.volume),
-                          hole: 0.3,
-                          hovertemplate: '<b>%{label}</b><br>Volume: %{value:,.0f}<br>Share: %{percent}<extra></extra>'
-                        }]}
-                        layout={{
-                          height: 400,
-                          margin: { t: 20, r: 20, b: 20, l: 20 },
-                          showlegend: true,
-                          plot_bgcolor: 'rgba(0,0,0,0)',
-                          paper_bgcolor: 'rgba(0,0,0,0)'
-                        }}
-                        config={{ displayModeBar: false }}
-                        style={{ width: '100%', height: '400px' }}
-                      />
-                    )}
+                    <div className="text-2xl font-bold">
+                      {filteredPlayers.reduce((sum, p) => sum + p.total_volume, 0).toLocaleString()}
+                    </div>
                   </CardContent>
                 </Card>
-              </div>
 
-              {/* Trend Analysis Scatter Plot */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Player Popularity vs Growth Trend</CardTitle>
-                  <p className="text-sm text-gray-600">
-                    Dotted line shows zero growth
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  {isMounted && (
-                    // @ts-expect-error - Plotly type definitions conflict
-                    <Plot
-                      data={[
-                        // All players
-                        {
-                          type: 'scatter' as const,
-                          mode: 'markers' as const,
-                          name: 'Players',
-                          x: filteredData.map(p => p.total_volume),
-                          y: filteredData.map(p => p.trend_percent),
-                          text: filteredData.map(p => p.name),
-                          marker: {
-                            color: '#3b82f6',
-                            size: filteredData.map(p => Math.max(8, Math.sqrt(p.total_volume) / 50)),
-                            line: { color: '#1d4ed8', width: 1 }
-                          },
-                          hovertemplate: '<b>%{text}</b><br>Volume: %{x:,.0f}<br>Trend: %{y:.1f}%<extra></extra>'
-                        },
-                        // Text labels for isolated points
-                        {
-                          type: 'scatter' as const,
-                          mode: 'text' as const,
-                          name: 'Player Names',
-                          showlegend: false,
-                          x: filteredData
-                            .filter(p => shouldShowLabel(p, filteredData))
-                            .map(p => p.total_volume),
-                          y: filteredData
-                            .filter(p => shouldShowLabel(p, filteredData))
-                            .map(p => p.trend_percent + 2), // Offset slightly above the dot
-                          text: filteredData
-                            .filter(p => shouldShowLabel(p, filteredData))
-                            .map(p => p.name),
-                          textfont: {
-                            size: 10,
-                            color: 'rgba(55, 65, 81, 0.8)'
-                          },
-                          textposition: 'top center' as const,
-                          hoverinfo: 'skip'
-                        }
-                      ]}
-                      layout={{
-                        height: 400,
-                        margin: { t: 20, r: 20, b: 60, l: 60 },
-                        xaxis: { title: 'Total Search Volume' },
-                        yaxis: { title: 'Growth Trend (%)' },
-                        hovermode: 'closest' as const,
-                        showlegend: true,
-                        legend: {
-                          x: 1,
-                          y: 1,
-                          xanchor: 'right',
-                          bgcolor: 'rgba(255, 255, 255, 0.8)',
-                          bordercolor: 'rgba(0, 0, 0, 0.1)',
-                          borderwidth: 1
-                        },
-                        plot_bgcolor: 'rgba(0,0,0,0)',
-                        paper_bgcolor: 'rgba(0,0,0,0)',
-                        shapes: [{
-                          type: 'line' as const,
-                          x0: 0,
-                          x1: Math.max(...filteredData.map(p => p.total_volume)),
-                          y0: 0,
-                          y1: 0,
-                          line: { color: 'gray', dash: 'dash' as const, width: 1 }
-                        }]
-                      }}
-                      config={{ displayModeBar: false }}
-                      style={{ width: '100%', height: '400px' }}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Player Data Tab - Comprehensive database table */}
-            <TabsContent value="data">
-              <Card>
-                <CardHeader>
-                  <CardTitle>📊 Player Database</CardTitle>
-                  <p className="text-gray-600">Complete player tracking database with search and analytics</p>
-                </CardHeader>
-                <CardContent>
-                  {/* Search and Controls */}
-                  <div className="mb-6 space-y-4">
-                    <div className="flex gap-4 items-center">
-                      <div className="flex-1">
-                        <Input
-                          type="text"
-                          placeholder="Search players, teams, countries, positions..."
-                          value={tableSearchTerm}
-                          onChange={(e) => setTableSearchTerm(e.target.value)}
-                          className="w-full"
-                        />
-                      </div>
-                      <Select value={sortBy} onValueChange={setSortBy}>
-                        <SelectTrigger className="w-48">
-                          <SelectValue placeholder="Sort by..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="volume">Search Volume</SelectItem>
-                          <SelectItem value="trend">Trend %</SelectItem>
-                          <SelectItem value="opportunity">Opportunity Score</SelectItem>
-                          <SelectItem value="name">Name</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="flex gap-2 items-center">
-                      <Badge variant="secondary">
-                        {tableFilteredData.length} of {filteredData.length} players shown
-                      </Badge>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowAllPlayers(!showAllPlayers)}
-                      >
-                        {showAllPlayers ? 'Show Top 20' : 'Show All Players'}
-                      </Button>
-                      {tableSearchTerm && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setTableSearchTerm('')}
-                        >
-                          Clear Search
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Player</TableHead>
-                          <TableHead>Position</TableHead>
-                          <TableHead>Age</TableHead>
-                          <TableHead>Team</TableHead>
-                          <TableHead>Market</TableHead>
-                          <TableHead>Volume</TableHead>
-                          <TableHead>Trend %</TableHead>
-                          <TableHead>Opportunity</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {tableFilteredData
-                          .slice(0, showAllPlayers ? tableFilteredData.length : 20)
-                          .map((player) => (
-                          <TableRow key={player.id} className="hover:bg-gray-50">
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">{player.name}</div>
-                                <div className="text-sm text-gray-500">{player.nationality}</div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{player.position}</Badge>
-                            </TableCell>
-                            <TableCell>{player.age}</TableCell>
-                            <TableCell className="text-sm">{player.current_team}</TableCell>
-                            <TableCell className="text-sm">{player.market}</TableCell>
-                            <TableCell className="font-mono">
-                              {(player.total_volume / 1000).toFixed(0)}K
-                            </TableCell>
-                            <TableCell className={`font-mono ${player.trend_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {player.trend_percent >= 0 ? '+' : ''}{player.trend_percent.toFixed(1)}%
-                            </TableCell>
-                            <TableCell className="font-mono">
-                              <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                                {player.opportunity_score.toFixed(0)}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  
-                  {tableFilteredData.length === 0 && tableSearchTerm && (
-                    <div className="text-center py-8 text-gray-500">
-                      <p className="text-lg">No players found matching &ldquo;{tableSearchTerm}&rdquo;</p>
-                      <p className="text-sm mt-2">Try searching by name, team, country, or position</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Analytics Tab - Individual Player Details */}
-            <TabsContent value="analytics">
-              <div className="space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>👤 Individual Player Analytics</CardTitle>
-                    <p className="text-gray-600">Detailed breakdown and insights for a specific player</p>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Markets</CardTitle>
+                    <Globe className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="mb-6 space-y-4">
-                      <label className="block text-sm font-medium">Search for Player:</label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Input
-                            type="text"
-                            placeholder="Search by player name..."
-                            value={playerNameSearch}
-                            onChange={(e) => setPlayerNameSearch(e.target.value)}
-                            className="w-full"
-                          />
-                        </div>
-                        <div>
-                          <Input
-                            type="text"
-                            placeholder="Search by team name..."
-                            value={teamSearch}
-                            onChange={(e) => setTeamSearch(e.target.value)}
-                            className="w-full"
-                          />
-                        </div>
-                      </div>
-                      
-                      {/* Search Results */}
-                      {(playerNameSearch || teamSearch) && (
-                        <div className="border rounded-lg max-h-48 overflow-y-auto">
-                          {(() => {
-                            const searchResults = filteredData.filter(player => {
-                              const matchesName = !playerNameSearch || player.name.toLowerCase().includes(playerNameSearch.toLowerCase());
-                              const matchesTeam = !teamSearch || player.current_team.toLowerCase().includes(teamSearch.toLowerCase());
-                              return matchesName && matchesTeam;
-                            });
-                            
-                            if (searchResults.length === 0) {
-                              return (
-                                <div className="p-4 text-gray-500 text-center">
-                                  No players found matching your search criteria
-                                </div>
-                              );
-                            }
-                            
-                            return searchResults.map(player => (
-                              <div
-                                key={player.id}
-                                className={`p-3 border-b cursor-pointer hover:bg-gray-50 ${selectedPlayerForAnalytics === player.name ? 'bg-blue-50 border-blue-200' : ''}`}
-                                onClick={() => {
-                                  setSelectedPlayerForAnalytics(player.name);
-                                  setPlayerNameSearch('');
-                                  setTeamSearch('');
-                                }}
-                              >
-                                <div className="font-medium">{player.name}</div>
-                                <div className="text-sm text-gray-600">
-                                  {player.current_team} • {player.position} • {(player.total_volume / 1000).toFixed(0)}K searches
-                                </div>
-                              </div>
-                            ));
-                          })()}
-                        </div>
-                      )}
-                      
-                      {selectedPlayerForAnalytics && !(playerNameSearch || teamSearch) && (
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                          <span className="text-sm font-medium">Selected:</span>
-                          <span className="text-sm">{selectedPlayerForAnalytics}</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedPlayerForAnalytics('')}
-                            className="ml-auto h-6 px-2 text-xs"
-                          >
-                            Clear
-                          </Button>
-                        </div>
-                      )}
+                    <div className="text-2xl font-bold">
+                      {new Set(filteredPlayers.flatMap(p => p.markets.map(m => m.market))).size}
                     </div>
+                  </CardContent>
+                </Card>
 
-                    {selectedPlayerForAnalytics && (() => {
-                      const selectedPlayer = filteredData.find(p => p.name === selectedPlayerForAnalytics);
-                      if (!selectedPlayer) return null;
-
-                      return (
-                        <div className="space-y-6">
-                          {/* Player Header */}
-                          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              <div>
-                                <h2 className="text-2xl font-bold text-gray-900">{selectedPlayer.name}</h2>
-                                <div className="space-y-2 mt-3 text-sm text-gray-600">
-                                  <p><span className="font-medium">Team:</span> {selectedPlayer.current_team}</p>
-                                  <p><span className="font-medium">Position:</span> {selectedPlayer.position}</p>
-                                  <p><span className="font-medium">Age:</span> {selectedPlayer.age} years old</p>
-                                  <p><span className="font-medium">Nationality:</span> {selectedPlayer.nationality}</p>
-                                  <p><span className="font-medium">Primary Market:</span> {selectedPlayer.market}</p>
-                                </div>
-                              </div>
-                              <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium">Opportunity Score:</span>
-                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                                    {selectedPlayer.opportunity_score.toFixed(0)}/100
-                                  </Badge>
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium">Market Coverage:</span>
-                                  <span className="text-sm font-bold">{selectedPlayer.market_count} markets</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Search Volume Stats */}
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <Card>
-                              <CardContent className="p-4">
-                                <div className="text-center">
-                                  <p className="text-sm text-gray-600">Total Search Volume</p>
-                                  <p className="text-2xl font-bold text-blue-600">
-                                    {(selectedPlayer.total_volume / 1000).toFixed(0)}K
-                                  </p>
-                                  <p className="text-xs text-gray-500">Monthly searches</p>
-                                </div>
-                              </CardContent>
-                            </Card>
-                            <Card>
-                              <CardContent className="p-4">
-                                <div className="text-center">
-                                  <p className="text-sm text-gray-600">Player Volume</p>
-                                  <p className="text-2xl font-bold text-green-600">
-                                    {(selectedPlayer.player_volume / 1000).toFixed(0)}K
-                                  </p>
-                                  <p className="text-xs text-gray-500">
-                                    {((selectedPlayer.player_volume / selectedPlayer.total_volume) * 100).toFixed(0)}% of total
-                                  </p>
-                                </div>
-                              </CardContent>
-                            </Card>
-                            <Card>
-                              <CardContent className="p-4">
-                                <div className="text-center">
-                                  <p className="text-sm text-gray-600">Merch Volume</p>
-                                  <p className="text-2xl font-bold text-purple-600">
-                                    {(selectedPlayer.merch_volume / 1000).toFixed(0)}K
-                                  </p>
-                                  <p className="text-xs text-gray-500">
-                                    {((selectedPlayer.merch_volume / selectedPlayer.total_volume) * 100).toFixed(0)}% of total
-                                  </p>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          </div>
-
-                          {/* Trend Analysis */}
-                          <Card>
-                            <CardHeader>
-                              <CardTitle>Search Trend Analysis</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                <div>
-                                  <div className="flex items-center gap-2 mb-4">
-                                    {selectedPlayer.trend_percent >= 0 ? (
-                                      <TrendingUp className="h-5 w-5 text-green-600" />
-                                    ) : (
-                                      <TrendingDown className="h-5 w-5 text-red-600" />
-                                    )}
-                                    <span className={`text-lg font-bold ${selectedPlayer.trend_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                      {selectedPlayer.trend_percent >= 0 ? '+' : ''}{selectedPlayer.trend_percent.toFixed(1)}%
-                                    </span>
-                                    <span className="text-sm text-gray-600">trend this month</span>
-                                  </div>
-                                  
-                                  <div className="space-y-3">
-                                    <div>
-                                      <div className="flex justify-between text-sm mb-1">
-                                        <span>Player Name Searches</span>
-                                        <span>{((selectedPlayer.player_volume / selectedPlayer.total_volume) * 100).toFixed(0)}%</span>
-                                      </div>
-                                      <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div 
-                                          className="bg-green-600 h-2 rounded-full" 
-                                          style={{width: `${(selectedPlayer.player_volume / selectedPlayer.total_volume) * 100}%`}}
-                                        ></div>
-                                      </div>
-                                    </div>
-                                    
-                                    <div>
-                                      <div className="flex justify-between text-sm mb-1">
-                                        <span>Merchandise Searches</span>
-                                        <span>{((selectedPlayer.merch_volume / selectedPlayer.total_volume) * 100).toFixed(0)}%</span>
-                                      </div>
-                                      <div className="w-full bg-gray-200 rounded-full h-2">
-                                        <div 
-                                          className="bg-purple-600 h-2 rounded-full" 
-                                          style={{width: `${(selectedPlayer.merch_volume / selectedPlayer.total_volume) * 100}%`}}
-                                        ></div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                <div>
-                                  {/* Market Performance Ranking */}
-                                  <h4 className="font-semibold mb-3">Market Performance Insights</h4>
-                                  <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between items-center p-2 bg-blue-50 rounded">
-                                      <span>Primary Market:</span>
-                                      <Badge variant="secondary">{selectedPlayer.market}</Badge>
-                                    </div>
-                                    <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                                      <span>Global Ranking:</span>
-                                      <span className="font-mono">
-                                        #{filteredData.sort((a, b) => b.total_volume - a.total_volume).findIndex(p => p.id === selectedPlayer.id) + 1} 
-                                        <span className="text-gray-500"> of {filteredData.length}</span>
-                                      </span>
-                                    </div>
-                                    <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                                      <span>Position Ranking:</span>
-                                      <span className="font-mono">
-                                        #{filteredData.filter(p => p.position === selectedPlayer.position).sort((a, b) => b.total_volume - a.total_volume).findIndex(p => p.id === selectedPlayer.id) + 1}
-                                        <span className="text-gray-500"> in {selectedPlayer.position}</span>
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </div>
-                      );
-                    })()}
-
-                    {!selectedPlayerForAnalytics && (
-                      <div className="text-center py-12 text-gray-500">
-                        <Users className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                        <h3 className="text-xl font-semibold mb-2">Select a Player</h3>
-                        <p>Choose a player from the dropdown above to see detailed analytics</p>
-                      </div>
-                    )}
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Avg Opportunity</CardTitle>
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {filteredPlayers.length > 0 
+                        ? Math.round(filteredPlayers.reduce((sum, p) => sum + p.opportunity_score, 0) / filteredPlayers.length)
+                        : 0}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
             </TabsContent>
 
-            {/* API Data Analysis Tab */}
-            <TabsContent value="analysis" className="space-y-6">
-              {(microTestResults || productionTestResults) ? (
-                <div className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>📋 API Test Results Analysis</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {/* Display data for whichever test results we have */}
-                      {productionTestResults && (
-                        <div className="space-y-4">
-                          <div className="bg-red-50 p-4 rounded-lg">
-                            <h3 className="font-bold text-red-800 mb-2">🚀 Full Production Test Results</h3>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                              <div><strong>Players:</strong> {productionTestResults.players.length}</div>
-                              <div><strong>Markets:</strong> {productionTestResults.markets.length}</div>
-                              <div><strong>Total Keywords:</strong> {productionTestResults.keywordCount?.toLocaleString()}</div>
-                              <div><strong>API Cost:</strong> ${(productionTestResults as { actualCost?: number }).actualCost?.toFixed(2) || productionTestResults.estimatedCost?.toFixed(2)}</div>
-                            </div>
-                          </div>
-                          
-                          {/* Market-by-Market Analysis Table */}
-                          <div>
-                            <h4 className="font-semibold mb-3">Market Analysis</h4>
-                            <div className="overflow-x-auto">
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead>Market</TableHead>
-                                    <TableHead className="text-right">Keywords with Data</TableHead>
-                                    <TableHead className="text-right">Avg Search Volume</TableHead>
-                                    <TableHead className="text-right">Top Keyword</TableHead>
-                                    <TableHead className="text-right">Top Volume</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {Object.entries(productionTestResults.results || {}).map(([market, keywords]) => {
-                                    const avgVolume = keywords.length > 0 ? 
-                                      keywords.reduce((sum, kw) => sum + (kw.search_volume || 0), 0) / keywords.length : 0;
-                                    const topKeyword = keywords.length > 0 ? 
-                                      keywords.sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))[0] : null;
-                                    return (
-                                      <TableRow key={market}>
-                                        <TableCell className="font-medium">{market}</TableCell>
-                                        <TableCell className="text-right">{keywords.length}</TableCell>
-                                        <TableCell className="text-right">{avgVolume.toLocaleString()}</TableCell>
-                                        <TableCell className="text-right text-xs">{topKeyword ? `"${topKeyword.keyword}"` : 'N/A'}</TableCell>
-                                        <TableCell className="text-right font-semibold text-green-600">
-                                          {topKeyword ? (topKeyword.search_volume || 0).toLocaleString() : '0'}
-                                        </TableCell>
-                                      </TableRow>
-                                    );
-                                  })}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {microTestResults && !productionTestResults && (
-                        <div className="space-y-4">
-                          <div className="bg-green-50 p-4 rounded-lg">
-                            <h3 className="font-bold text-green-800 mb-2">🧪 Micro Test Results</h3>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                              <div><strong>Players:</strong> {microTestResults.players.length}</div>
-                              <div><strong>Markets:</strong> {microTestResults.markets.length}</div>
-                              <div><strong>Keywords:</strong> {microTestResults.keywordCount}</div>
-                              <div><strong>Cost:</strong> ${(microTestResults as { actualCost?: number }).actualCost?.toFixed(3) || microTestResults.estimatedCost.toFixed(3)}</div>
-                            </div>
-                          </div>
-                          
-                          {/* Micro Test Market Analysis */}
-                          <div>
-                            <h4 className="font-semibold mb-3">Market Analysis</h4>
-                            <div className="overflow-x-auto">
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead>Market</TableHead>
-                                    <TableHead className="text-right">Keywords with Data</TableHead>
-                                    <TableHead className="text-right">Avg Search Volume</TableHead>
-                                    <TableHead className="text-right">Top Keyword</TableHead>
-                                    <TableHead className="text-right">Top Volume</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {Object.entries(microTestResults.results || {}).map(([market, keywords]) => {
-                                    const avgVolume = keywords.length > 0 ? 
-                                      keywords.reduce((sum, kw) => sum + (kw.search_volume || 0), 0) / keywords.length : 0;
-                                    const topKeyword = keywords.length > 0 ? 
-                                      keywords.sort((a, b) => (b.search_volume || 0) - (a.search_volume || 0))[0] : null;
-                                    return (
-                                      <TableRow key={market}>
-                                        <TableCell className="font-medium">{market}</TableCell>
-                                        <TableCell className="text-right">{keywords.length}</TableCell>
-                                        <TableCell className="text-right">{avgVolume.toLocaleString()}</TableCell>
-                                        <TableCell className="text-right text-xs">{topKeyword ? `"${topKeyword.keyword}"` : 'N/A'}</TableCell>
-                                        <TableCell className="text-right font-semibold text-green-600">
-                                          {topKeyword ? (topKeyword.search_volume || 0).toLocaleString() : '0'}
-                                        </TableCell>
-                                      </TableRow>
-                                    );
-                                  })}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                  
-                  {/* Cost Analysis & Recommendations */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>💰 Cost Analysis & API Recommendations</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <h4 className="font-semibold">Cost Breakdown</h4>
-                          {productionTestResults && (
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span>Total API Requests:</span>
-                                <span className="font-mono">{productionTestResults.totalRequests}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Cost per Request:</span>
-                                <span className="font-mono">$0.0101</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Total Cost:</span>
-                                <span className="font-mono font-bold text-green-600">${((productionTestResults as { actualCost?: number }).actualCost || productionTestResults.estimatedCost).toFixed(2)}</span>
-                              </div>
-                              <div className="flex justify-between text-gray-600">
-                                <span>Google Ads API would cost:</span>
-                                <span className="font-mono line-through">$18.75</span>
-                              </div>
-                              <div className="flex justify-between font-bold text-green-600">
-                                <span>Savings with Labs API:</span>
-                                <span className="font-mono">~$16.86 (90%)</span>
-                              </div>
-                            </div>
-                          )}
-                          {microTestResults && !productionTestResults && (
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span>Keywords Tested:</span>
-                                <span className="font-mono">{microTestResults.keywordCount}</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Cost per Keyword:</span>
-                                <span className="font-mono">$0.0101</span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span>Total Cost:</span>
-                                <span className="font-mono font-bold text-green-600">${((microTestResults as { actualCost?: number }).actualCost || microTestResults.estimatedCost).toFixed(3)}</span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="space-y-4">
-                          <h4 className="font-semibold">Recommendations</h4>
-                          <div className="space-y-3 text-sm">
-                            <div className="p-3 bg-green-50 rounded-lg">
-                              <div className="font-medium text-green-800">✅ DataForSEO Labs API</div>
-                              <div className="text-green-700">90% cheaper than Google Ads API with same data quality</div>
-                            </div>
-                            <div className="p-3 bg-blue-50 rounded-lg">
-                              <div className="font-medium text-blue-800">📊 July 2025 Data</div>
-                              <div className="text-blue-700">Current date range optimized for executive reporting</div>
-                            </div>
-                            <div className="p-3 bg-purple-50 rounded-lg">
-                              <div className="font-medium text-purple-800">🔧 Raw Data Access</div>
-                              <div className="text-purple-700">Complete API responses available for external analysis</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              ) : (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <div className="text-gray-400 mb-4">
-                      <BarChart3 className="h-16 w-16 mx-auto mb-4" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-600 mb-2">No API Test Results Yet</h3>
-                    <p className="text-gray-500 mb-4">Run a micro test or full production test to see detailed API data analysis here.</p>
-                    <p className="text-sm text-gray-400">This tab will show comprehensive analysis of your API test results, including cost breakdowns, market analysis, and data interpretation.</p>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-
-            {/* Heatmap Tab */}
-            <TabsContent value="heatmap">
+            {/* Players Tab */}
+            <TabsContent value="players" className="space-y-6">
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle>🌍 Player-Market Heatmap</CardTitle>
-                      <p className="text-gray-600">Search volume intensity across players and markets</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">Players:</span>
-                      <Select value={heatmapPlayerCount.toString()} onValueChange={(value) => setHeatmapPlayerCount(parseInt(value))}>
-                        <SelectTrigger className="w-20">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="10">10</SelectItem>
-                          <SelectItem value="25">25</SelectItem>
-                          <SelectItem value="50">50</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <CardTitle>Player Performance</CardTitle>
+                    <Select value={sortBy} onValueChange={setSortBy}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="total_volume">Total Volume</SelectItem>
+                        <SelectItem value="opportunity_score">Opportunity Score</SelectItem>
+                        <SelectItem value="market_count">Market Count</SelectItem>
+                        <SelectItem value="trend_percent">Trend</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {(() => {
-                    // Generate heatmap data using all available markets and selected player count
-                    const topPlayers = filteredData
-                      .sort((a, b) => b.total_volume - a.total_volume)
-                      .slice(0, heatmapPlayerCount);
-                    
-                    // Use marketsList to ensure we show all markets
-                    const allMarkets = marketsList;
-                    
-                    // Create 2D array for heatmap
-                    const heatmapZ = [];
-                    
-                    for (let i = 0; i < topPlayers.length; i++) {
-                      const playerRow = [];
-                      for (let j = 0; j < allMarkets.length; j++) {
-                        if (allMarkets[j] === topPlayers[i].market) {
-                          // Player's actual market gets full volume
-                          playerRow.push(topPlayers[i].total_volume);
-                        } else {
-                          // Other markets get simulated lower volume
-                          playerRow.push(Math.round(topPlayers[i].total_volume * (Math.random() * 0.4 + 0.1)));
-                        }
-                      }
-                      heatmapZ.push(playerRow);
-                    }
-
-                    return isMounted && topPlayers.length > 0 && (
-                      // @ts-expect-error - Plotly type definitions conflict
-                      <Plot
-                        data={[{
-                          type: 'heatmap' as const,
-                          z: heatmapZ,
-                          x: allMarkets,
-                          y: topPlayers.map(p => p.name),
-                          colorscale: [
-                            [0, '#22C55E'],     // Green (low/cool)
-                            [0.3, '#65A30D'],   // Yellow-green
-                            [0.6, '#F59E0B'],   // Orange
-                            [1, '#DC2626']      // Red (high/hot)
-                          ] as const,
-                          hovertemplate: '<b>%{y}</b> in <b>%{x}</b><br>Volume: %{z:,.0f}<extra></extra>'
-                        }]}
-                        layout={{
-                          height: Math.max(400, topPlayers.length * 30 + 150),
-                          margin: { t: 20, r: 20, b: 100, l: 150 },
-                          xaxis: { title: 'Market', tickangle: 45 },
-                          yaxis: { title: 'Player' },
-                          plot_bgcolor: 'rgba(0,0,0,0)',
-                          paper_bgcolor: 'rgba(0,0,0,0)'
-                        }}
-                        config={{ displayModeBar: false }}
-                        style={{ width: '100%', height: `${Math.max(400, topPlayers.length * 30 + 150)}px` }}
-                      />
-                    );
-                  })()}
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Player</TableHead>
+                        <TableHead>Team</TableHead>
+                        <TableHead>Position</TableHead>
+                        <TableHead>Total Volume</TableHead>
+                        <TableHead>Opportunity</TableHead>
+                        <TableHead>Markets</TableHead>
+                        <TableHead>Trend</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredPlayers.slice(0, 20).map((player) => (
+                        <TableRow key={player.id}>
+                          <TableCell className="font-medium">{player.name}</TableCell>
+                          <TableCell>{player.current_team}</TableCell>
+                          <TableCell>{player.position}</TableCell>
+                          <TableCell>{player.total_volume.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <Badge variant={player.opportunity_score >= 75 ? "default" : player.opportunity_score >= 50 ? "secondary" : "outline"}>
+                              {player.opportunity_score}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{player.market_count}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              {player.trend_percent >= 0 ? (
+                                <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
+                              ) : (
+                                <TrendingDown className="h-4 w-4 text-red-600 mr-1" />
+                              )}
+                              <span className={player.trend_percent >= 0 ? "text-green-600" : "text-red-600"}>
+                                {player.trend_percent.toFixed(1)}%
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </CardContent>
               </Card>
             </TabsContent>
 
-            {/* Comparisons Tab */}
-            <TabsContent value="comparisons">
-              <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>⚖️ Player Comparison Tool</CardTitle>
-                    <p className="text-gray-600">Compare 2-5 players across selected markets</p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="mb-6">
-                      <label className="block text-sm font-medium mb-3">Search and Select Players to Compare (2-5 players):</label>
+            {/* Markets Tab */}
+            <TabsContent value="markets" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Market Analysis</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {Array.from(new Set(filteredPlayers.flatMap(p => p.markets.map(m => m.market)))).map((market) => {
+                      const marketPlayers = filteredPlayers.filter(p => p.markets.some(m => m.market === market));
+                      const totalVolume = marketPlayers.reduce((sum, p) => {
+                        const marketData = p.markets.find(m => m.market === market);
+                        return sum + (marketData?.volume || 0);
+                      }, 0);
                       
-                      {/* Search Input with Dropdown */}
-                      <div className="relative mb-4" onClick={(e) => e.stopPropagation()}>
-                        <Input
-                          type="text"
-                          placeholder="Search players..."
-                          value={playerSearchTerm}
-                          onChange={(e) => {
-                            setPlayerSearchTerm(e.target.value);
-                            setShowPlayerDropdown(true);
-                          }}
-                          onFocus={() => setShowPlayerDropdown(true)}
-                          className="w-full"
-                        />
-                        
-                        {showPlayerDropdown && (
-                          <div 
-                            className="absolute top-full left-0 right-0 z-10 mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {(() => {
-                              const searchResults = filteredData.filter(player =>
-                                player.name.toLowerCase().includes(playerSearchTerm.toLowerCase())
-                              );
-                              
-                              return searchResults.length > 0 ? (
-                                searchResults.map(player => (
-                                  <div
-                                    key={player.id}
-                                    className={`px-3 py-2 cursor-pointer hover:bg-gray-50 flex items-center justify-between ${
-                                      selectedComparisonPlayers.includes(player.name) ? 'bg-blue-50' : ''
-                                    } ${
-                                      !selectedComparisonPlayers.includes(player.name) && selectedComparisonPlayers.length >= 5
-                                        ? 'opacity-50 cursor-not-allowed'
-                                        : ''
-                                    }`}
-                                    onClick={() => {
-                                      if (selectedComparisonPlayers.includes(player.name)) {
-                                        setSelectedComparisonPlayers(selectedComparisonPlayers.filter(p => p !== player.name));
-                                      } else if (selectedComparisonPlayers.length < 5) {
-                                        setSelectedComparisonPlayers([...selectedComparisonPlayers, player.name]);
-                                      }
-                                    }}
-                                  >
-                                    <div>
-                                      <div className="font-medium">{player.name}</div>
-                                      <div className="text-xs text-gray-500">
-                                        {player.current_team} • {(player.total_volume / 1000).toFixed(0)}K searches
-                                      </div>
-                                    </div>
-                                    {selectedComparisonPlayers.includes(player.name) && (
-                                      <Badge variant="default" className="text-xs">Selected</Badge>
-                                    )}
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="px-3 py-2 text-gray-500 text-sm">No players found</div>
-                              );
-                            })()}
+                      return (
+                        <div key={market} className="p-4 border rounded-lg">
+                          <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-medium">{market}</h3>
+                            <Badge>{marketPlayers.length} players</Badge>
                           </div>
-                        )}
-                      </div>
-
-                      {/* Selected Players Display */}
-                      {selectedComparisonPlayers.length > 0 && (
-                        <div className="mb-4">
-                          <div className="text-sm font-medium mb-2">Selected Players:</div>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedComparisonPlayers.map(playerName => (
-                              <Badge 
-                                key={playerName} 
-                                variant="secondary" 
-                                className="flex items-center gap-1"
-                              >
-                                {playerName}
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-4 w-4 p-0 hover:bg-red-100"
-                                  onClick={() => {
-                                    setSelectedComparisonPlayers(selectedComparisonPlayers.filter(p => p !== playerName));
-                                  }}
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </Badge>
-                            ))}
+                          <div className="text-sm text-gray-600">
+                            Total Volume: {totalVolume.toLocaleString()}
                           </div>
                         </div>
-                      )}
-
-                      <div className="flex gap-2 items-center">
-                        <Badge variant="secondary">{selectedComparisonPlayers.length}/5 players selected</Badge>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => {
-                            setSelectedComparisonPlayers([]);
-                            setPlayerSearchTerm("");
-                            setShowPlayerDropdown(false);
-                          }}
-                        >
-                          Clear All
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setShowPlayerDropdown(false)}
-                        >
-                          Close Search
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {selectedComparisonPlayers.length >= 2 && (
-                      <div className="space-y-4">
-                        {/* Market Comparison Bar Chart */}
-                        <div>
-                          <h3 className="text-lg font-semibold mb-2">Search Volume by Market</h3>
-                          {(() => {
-                            const comparisonPlayersData = filteredData.filter(p => 
-                              selectedComparisonPlayers.includes(p.name)
-                            );
-                            
-                            const plotData = selectedMarkets.map(market => ({
-                              x: comparisonPlayersData.map(p => p.name),
-                              y: comparisonPlayersData.map(p => {
-                                if (market === p.market) {
-                                  return p.total_volume;
-                                } else {
-                                  // Simulate volume in other markets
-                                  return Math.round(p.total_volume * (Math.random() * 0.4 + 0.1));
-                                }
-                              }),
-                              name: market,
-                              type: 'bar' as const,
-                              hovertemplate: '<b>%{x}</b><br>' + market + ': %{y:,.0f}<extra></extra>'
-                            }));
-
-                            return isMounted && (
-                              // @ts-expect-error - Plotly type definitions conflict
-                      <Plot
-                                data={plotData}
-                                layout={{
-                                  height: 400,
-                                  margin: { t: 20, r: 20, b: 80, l: 60 },
-                                  xaxis: { title: 'Players' },
-                                  yaxis: { title: 'Search Volume' },
-                                  barmode: 'group' as const,
-                                  plot_bgcolor: 'rgba(0,0,0,0)',
-                                  paper_bgcolor: 'rgba(0,0,0,0)',
-                                  legend: { orientation: 'h' as const, y: -0.2 }
-                                }}
-                                config={{ displayModeBar: false }}
-                                style={{ width: '100%', height: '400px' }}
-                              />
-                            );
-                          })()}
-                        </div>
-
-                        {/* Player Metrics Comparison */}
-                        <div>
-                          <h3 className="text-lg font-semibold mb-2">Player Metrics Comparison</h3>
-                          {(() => {
-                            const comparisonPlayersData = filteredData.filter(p => 
-                              selectedComparisonPlayers.includes(p.name)
-                            );
-                            
-                            const metrics = [
-                              { key: 'total_volume', name: 'Total Volume (K)', divisor: 1000 },
-                              { key: 'trend_percent', name: 'Trend %', divisor: 1 },
-                              { key: 'opportunity_score', name: 'Opportunity Score', divisor: 1 },
-                              { key: 'market_count', name: 'Market Count', divisor: 1 }
-                            ];
-
-                            const plotData = metrics.map(metric => ({
-                              x: comparisonPlayersData.map(p => p.name),
-                              y: comparisonPlayersData.map(p => p[metric.key as keyof PlayerData] as number / metric.divisor),
-                              name: metric.name,
-                              type: 'bar' as const,
-                              hovertemplate: '<b>%{x}</b><br>' + metric.name + ': %{y}<extra></extra>'
-                            }));
-
-                            return isMounted && (
-                              // @ts-expect-error - Plotly type definitions conflict
-                      <Plot
-                                data={plotData}
-                                layout={{
-                                  height: 400,
-                                  margin: { t: 20, r: 20, b: 80, l: 60 },
-                                  xaxis: { title: 'Players' },
-                                  yaxis: { title: 'Value' },
-                                  barmode: 'group' as const,
-                                  plot_bgcolor: 'rgba(0,0,0,0)',
-                                  paper_bgcolor: 'rgba(0,0,0,0)',
-                                  legend: { orientation: 'h' as const, y: -0.2 }
-                                }}
-                                config={{ displayModeBar: false }}
-                                style={{ width: '100%', height: '400px' }}
-                              />
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedComparisonPlayers.length < 2 && (
-                      <div className="text-center py-12 text-gray-500">
-                        <BarChart3 className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                        <h3 className="text-xl font-semibold mb-2">Select Players to Compare</h3>
-                        <p>Choose at least 2 players to see the comparison charts</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
-            {/* Opportunities Tab */}
-            <TabsContent value="opportunities">
-              <div className="space-y-6">
-                {/* Opportunity Score Methodology */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>🎯 Opportunity Score Methodology</CardTitle>
-                    <p className="text-gray-600">Understanding how opportunity scores are calculated from key performance metrics</p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-600">50%</div>
-                          <div className="text-sm text-blue-800 font-medium">Total Volume</div>
-                          <div className="text-xs text-gray-600">Base interest level</div>
-                        </div>
-                      </div>
-                      <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-green-600">30%</div>
-                          <div className="text-sm text-green-800 font-medium">Growth Trend</div>
-                          <div className="text-xs text-gray-600">Momentum indicator</div>
-                        </div>
-                      </div>
-                      <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-purple-600">20%</div>
-                          <div className="text-sm text-purple-800 font-medium">Market Reach</div>
-                          <div className="text-xs text-gray-600">Number of global markets</div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                      <p className="text-sm text-gray-700">
-                        <strong>Formula:</strong> Opportunity Score = (Volume × 0.5) + (Trend × 0.3) + (Markets × 0.2)
-                        <br />
-                        <strong>Note:</strong> All players receive opportunity scores based on their market performance.
-                      </p>
-                      <div className="text-xs text-gray-600 space-y-2">
-                        <p>
-                          <strong>Market Reach Definition:</strong> The number of different geographical markets where the player has significant search volume presence.
-                        </p>
-                        <p>
-                          <strong>Significance Threshold:</strong> A market is considered &ldquo;significant&rdquo; if the player receives at least 5,000+ monthly searches in that region, representing meaningful fan interest and commercial potential.
-                        </p>
-                        <p>
-                          <strong>Example:</strong> A player with 50K searches in UK, 30K in US, 15K in Germany, 8K in Spain, and 6K in Italy = 5 markets (higher global appeal vs. a player with 100K searches only in their home country = 1 market).
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Comprehensive Opportunities Table */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>📊 Comprehensive Opportunity Analysis</CardTitle>
-                    <p className="text-gray-600">Detailed breakdown of all metrics contributing to opportunity scores</p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead className="w-8">#</TableHead>
-                            <TableHead>Player</TableHead>
-                            <TableHead>Team</TableHead>
-                            <TableHead>Age</TableHead>
-                            <TableHead>Total Volume</TableHead>
-                            <TableHead>Player Volume</TableHead>
-                            <TableHead>Merch Volume</TableHead>
-                            <TableHead>Growth Trend</TableHead>
-                            <TableHead>Markets</TableHead>
-                            <TableHead>Opportunity Score</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredData
-                            .sort((a, b) => b.opportunity_score - a.opportunity_score)
-                            .slice(0, 15)
-                            .map((player, index) => (
-                              <TableRow key={player.id} className={index < 3 ? 'bg-green-50' : ''}>
-                                <TableCell>
-                                  <div className={`text-center font-bold ${index < 3 ? 'text-green-600' : 'text-gray-600'}`}>
-                                    #{index + 1}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div>
-                                    <div className="font-medium">{player.name}</div>
-                                    <div className="text-sm text-gray-500">{player.nationality}</div>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="text-sm">
-                                    <div className="font-medium">{player.current_team}</div>
-                                    <div className="text-gray-500">{player.position}</div>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge variant={player.age <= 23 ? 'default' : player.age <= 27 ? 'secondary' : 'outline'}>
-                                    {player.age}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="text-right">
-                                    <div className="font-medium">{(player.total_volume / 1000).toFixed(0)}K</div>
-                                    <div className="text-xs text-gray-500">Monthly</div>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="text-right">
-                                    <div className="font-medium">{(player.player_volume / 1000).toFixed(0)}K</div>
-                                    <div className="text-xs text-gray-500">
-                                      {((player.player_volume / player.total_volume) * 100).toFixed(0)}%
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="text-right">
-                                    <div className="font-medium">{(player.merch_volume / 1000).toFixed(0)}K</div>
-                                    <div className="text-xs text-gray-500">
-                                      {((player.merch_volume / player.total_volume) * 100).toFixed(0)}%
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center justify-end">
-                                    {player.trend_percent >= 0 ? 
-                                      <TrendingUp className="h-4 w-4 text-green-600 mr-1" /> : 
-                                      <TrendingDown className="h-4 w-4 text-red-600 mr-1" />
-                                    }
-                                    <span className={`font-medium ${player.trend_percent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                      {player.trend_percent >= 0 ? '+' : ''}{player.trend_percent.toFixed(1)}%
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="text-center">
-                                    <Badge variant="outline">{player.market_count}</Badge>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="text-right">
-                                    <div className={`text-xl font-bold ${
-                                      player.opportunity_score >= 80 ? 'text-green-600' :
-                                      player.opportunity_score >= 70 ? 'text-blue-600' :
-                                      player.opportunity_score >= 60 ? 'text-orange-600' : 'text-gray-600'
-                                    }`}>
-                                      {player.opportunity_score.toFixed(0)}
-                                    </div>
-                                    <div className="text-xs text-gray-500">/100</div>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </CardContent>
-                </Card>
-
-              </div>
+            {/* Trends Tab */}
+            <TabsContent value="trends" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Trend Analysis</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-96">
+                    <Plot
+                      data={[
+                        {
+                          x: filteredPlayers.map(p => p.name),
+                          y: filteredPlayers.map(p => p.trend_percent),
+                          type: 'bar',
+                          marker: {
+                            color: filteredPlayers.map(p => p.trend_percent >= 0 ? '#10B981' : '#EF4444'),
+                          },
+                        },
+                      ]}
+                      layout={{
+                        title: { text: 'Player Trend Analysis' },
+                        xaxis: { title: { text: 'Players' } },
+                        yaxis: { title: { text: 'Trend %' } },
+                        height: 350,
+                      }}
+                      config={{ responsive: true }}
+                      style={{ width: '100%', height: '100%' }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
-        </div>
+        </main>
       </div>
     </div>
   );
