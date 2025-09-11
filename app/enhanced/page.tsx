@@ -294,10 +294,10 @@ export default function EnhancedDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-lg transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-gradient-to-b from-blue-50 to-white border-r-2 border-blue-200 shadow-xl transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Data Controls</h2>
+            <h2 className="text-xl font-bold text-blue-800">Data Controls</h2>
             <Button variant="ghost" size="sm" onClick={() => setSidebarOpen(false)}>
               <X className="h-4 w-4" />
             </Button>
@@ -451,79 +451,81 @@ export default function EnhancedDashboard() {
           </div>
         </header>
 
+        {/* Key Metrics Section - Restored to top of page */}
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+          <div className="px-6 py-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Users className="h-6 w-6 mr-2" />
+                  <h3 className="text-lg font-semibold">Total Players</h3>
+                </div>
+                <div className="text-3xl font-bold">{filteredPlayers.length}</div>
+                <div className="text-blue-100 text-sm mt-1">Active in database</div>
+              </div>
+
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <BarChart3 className="h-6 w-6 mr-2" />
+                  <h3 className="text-lg font-semibold">Total Volume</h3>
+                </div>
+                <div className="text-3xl font-bold">
+                  {filteredPlayers.reduce((sum, p) => sum + p.total_volume, 0).toLocaleString()}
+                </div>
+                <div className="text-blue-100 text-sm mt-1">Monthly search volume</div>
+              </div>
+
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Globe className="h-6 w-6 mr-2" />
+                  <h3 className="text-lg font-semibold">Markets</h3>
+                </div>
+                <div className="text-3xl font-bold">
+                  {new Set(filteredPlayers.flatMap(p => p.markets.map(m => m.market))).size}
+                </div>
+                <div className="text-blue-100 text-sm mt-1">Global markets</div>
+              </div>
+
+              <div className="text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Target className="h-6 w-6 mr-2" />
+                  <h3 className="text-lg font-semibold">Avg Opportunity</h3>
+                </div>
+                <div className="text-3xl font-bold">
+                  {Math.round(filteredPlayers.reduce((sum, p) => sum + p.opportunity_score, 0) / filteredPlayers.length || 0)}
+                </div>
+                <div className="text-blue-100 text-sm mt-1">Market potential</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Dashboard Content */}
         <main className="p-6">
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="individual">Individual Search</TabsTrigger>
-              <TabsTrigger value="players">All Players</TabsTrigger>
-              <TabsTrigger value="comparison">Player Comparison</TabsTrigger>
-              <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
-              <TabsTrigger value="markets">Markets</TabsTrigger>
-              <TabsTrigger value="trends">Trends</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-7 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200">
+              <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Overview</TabsTrigger>
+              <TabsTrigger value="individual" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Individual Search</TabsTrigger>
+              <TabsTrigger value="players" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">All Players</TabsTrigger>
+              <TabsTrigger value="comparison" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Player Comparison</TabsTrigger>
+              <TabsTrigger value="opportunities" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Opportunities</TabsTrigger>
+              <TabsTrigger value="markets" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Markets</TabsTrigger>
+              <TabsTrigger value="trends" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg transition-all duration-200">Trends</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Players</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{filteredPlayers.length}</div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Volume</CardTitle>
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {filteredPlayers.reduce((sum, p) => sum + p.total_volume, 0).toLocaleString()}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Markets</CardTitle>
-                    <Globe className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {new Set(filteredPlayers.flatMap(p => p.markets.map(m => m.market))).size}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Avg Opportunity</CardTitle>
-                    <Target className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {filteredPlayers.length > 0 
-                        ? Math.round(filteredPlayers.reduce((sum, p) => sum + p.opportunity_score, 0) / filteredPlayers.length)
-                        : 0}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-              
-              {/* Overview Charts and Tables */}
+              {/* Overview Charts and Tables - Enhanced with original styling */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Top Performers Chart */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Top 10 Players by Volume</CardTitle>
+                <Card className="border-blue-200 shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-blue-100">
+                    <CardTitle className="text-blue-800 flex items-center">
+                      <TrendingUp className="h-5 w-5 mr-2" />
+                      Top 10 Players by Volume
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-6">
                     <div className="h-80">
                       <Plot
                         data={[
@@ -531,14 +533,19 @@ export default function EnhancedDashboard() {
                             x: filteredPlayers.slice(0, 10).map(p => p.name),
                             y: filteredPlayers.slice(0, 10).map(p => p.total_volume),
                             type: 'bar',
-                            marker: { color: '#10B981' },
+                            marker: { 
+                              color: '#3B82F6',
+                              line: { color: '#1E40AF', width: 1 }
+                            },
                           },
                         ]}
                         layout={{
-                          title: { text: 'Top Performers by Search Volume' },
-                          xaxis: { title: { text: 'Players' } },
-                          yaxis: { title: { text: 'Total Volume' } },
+                          title: { text: '', font: { color: '#1E40AF' } },
+                          xaxis: { title: { text: 'Players', font: { color: '#374151' } } },
+                          yaxis: { title: { text: 'Total Volume', font: { color: '#374151' } } },
                           height: 300,
+                          plot_bgcolor: 'rgba(0,0,0,0)',
+                          paper_bgcolor: 'rgba(0,0,0,0)'
                         }}
                         config={{ responsive: true }}
                         style={{ width: '100%', height: '100%' }}
@@ -548,11 +555,14 @@ export default function EnhancedDashboard() {
                 </Card>
 
                 {/* Market Distribution */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Volume by Market</CardTitle>
+                <Card className="border-purple-200 shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-purple-50 to-blue-50 border-b border-purple-100">
+                    <CardTitle className="text-purple-800 flex items-center">
+                      <Globe className="h-5 w-5 mr-2" />
+                      Volume by Market
+                    </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-6">
                     <div className="h-80">
                       <Plot
                         data={[
@@ -565,12 +575,17 @@ export default function EnhancedDashboard() {
                               }, 0);
                             }),
                             type: 'pie',
-                            marker: { colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'] },
+                            marker: { colors: ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444'] },
+                            textinfo: 'label+percent',
+                            textposition: 'outside'
                           },
                         ]}
                         layout={{
-                          title: { text: 'Market Distribution' },
+                          title: { text: '', font: { color: '#7C3AED' } },
                           height: 300,
+                          plot_bgcolor: 'rgba(0,0,0,0)',
+                          paper_bgcolor: 'rgba(0,0,0,0)',
+                          font: { color: '#374151' }
                         }}
                         config={{ responsive: true }}
                         style={{ width: '100%', height: '100%' }}
@@ -583,9 +598,12 @@ export default function EnhancedDashboard() {
               {/* Summary Tables */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Top Opportunities Table */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Top Opportunities</CardTitle>
+                <Card className="border-green-200 shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50 border-b border-green-100">
+                    <CardTitle className="text-green-800 flex items-center">
+                      <Star className="h-5 w-5 mr-2" />
+                      Top Opportunities
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Table>
@@ -623,9 +641,12 @@ export default function EnhancedDashboard() {
                 </Card>
 
                 {/* Market Performance Table */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Market Performance</CardTitle>
+                <Card className="border-orange-200 shadow-lg">
+                  <CardHeader className="bg-gradient-to-r from-orange-50 to-yellow-50 border-b border-orange-100">
+                    <CardTitle className="text-orange-800 flex items-center">
+                      <BarChart3 className="h-5 w-5 mr-2" />
+                      Market Performance
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
                     <Table>
