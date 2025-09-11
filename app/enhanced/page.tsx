@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Slider } from "@/components/ui/slider";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { 
   Menu, X, Download, TrendingUp, 
-  TrendingDown, Users, Globe, Target, BarChart3, Upload
+  TrendingDown, Users, Globe, Target, BarChart3, Upload, Search, 
+  Star, Award, ArrowUpDown
 } from "lucide-react";
 import { generateEnhancedPlayerData, marketsList } from '@/lib/market-data-generator';
 import { transformAPIToDashboard } from '@/lib/api-data-transformer';
@@ -74,6 +76,16 @@ export default function EnhancedDashboard() {
     timestamp: string;
   } | null>(null);
   const [isDragOver, setIsDragOver] = useState<boolean>(false);
+  
+  // Individual search state
+  const [individualSearchQuery, setIndividualSearchQuery] = useState<string>("");
+  const [individualSearchResults, setIndividualSearchResults] = useState<PlayerData[]>([]);
+  
+  // Comparison state
+  const [selectedPlayersForComparison, setSelectedPlayersForComparison] = useState<string[]>([]);
+  
+  // Market analysis state (reserved for future use)
+  // const [selectedMarketForAnalysis, setSelectedMarketForAnalysis] = useState<string>("all");
 
   // Initialize with sample data
   useEffect(() => {
@@ -247,6 +259,38 @@ export default function EnhancedDashboard() {
     return csv;
   };
 
+  // Individual search functionality  
+  const handleIndividualSearch = () => {
+    if (!individualSearchQuery.trim()) {
+      setIndividualSearchResults([]);
+      return;
+    }
+    
+    const results = players.filter(player =>
+      player.name.toLowerCase().includes(individualSearchQuery.toLowerCase()) ||
+      player.current_team.toLowerCase().includes(individualSearchQuery.toLowerCase()) ||
+      player.position.toLowerCase().includes(individualSearchQuery.toLowerCase()) ||
+      player.nationality.toLowerCase().includes(individualSearchQuery.toLowerCase())
+    );
+    setIndividualSearchResults(results);
+  };
+
+  // Player comparison functionality
+  const togglePlayerForComparison = (playerId: string) => {
+    setSelectedPlayersForComparison(prev => {
+      if (prev.includes(playerId)) {
+        return prev.filter(id => id !== playerId);
+      } else if (prev.length < 4) {
+        return [...prev, playerId];
+      }
+      return prev;
+    });
+  };
+
+  const getComparisonPlayers = () => {
+    return players.filter(p => selectedPlayersForComparison.includes(p.id.toString()));
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Sidebar */}
@@ -410,9 +454,12 @@ export default function EnhancedDashboard() {
         {/* Dashboard Content */}
         <main className="p-6">
           <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="players">Players</TabsTrigger>
+              <TabsTrigger value="individual">Individual Search</TabsTrigger>
+              <TabsTrigger value="players">All Players</TabsTrigger>
+              <TabsTrigger value="comparison">Player Comparison</TabsTrigger>
+              <TabsTrigger value="opportunities">Opportunities</TabsTrigger>
               <TabsTrigger value="markets">Markets</TabsTrigger>
               <TabsTrigger value="trends">Trends</TabsTrigger>
             </TabsList>
@@ -468,6 +515,237 @@ export default function EnhancedDashboard() {
                   </CardContent>
                 </Card>
               </div>
+              
+              {/* Overview Charts and Tables */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Top Performers Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top 10 Players by Volume</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-80">
+                      <Plot
+                        data={[
+                          {
+                            x: filteredPlayers.slice(0, 10).map(p => p.name),
+                            y: filteredPlayers.slice(0, 10).map(p => p.total_volume),
+                            type: 'bar',
+                            marker: { color: '#10B981' },
+                          },
+                        ]}
+                        layout={{
+                          title: { text: 'Top Performers by Search Volume' },
+                          xaxis: { title: { text: 'Players' } },
+                          yaxis: { title: { text: 'Total Volume' } },
+                          height: 300,
+                        }}
+                        config={{ responsive: true }}
+                        style={{ width: '100%', height: '100%' }}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Market Distribution */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Volume by Market</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-80">
+                      <Plot
+                        data={[
+                          {
+                            labels: Array.from(new Set(filteredPlayers.flatMap(p => p.markets.map(m => m.market)))),
+                            values: Array.from(new Set(filteredPlayers.flatMap(p => p.markets.map(m => m.market)))).map(market => {
+                              return filteredPlayers.reduce((sum, player) => {
+                                const marketData = player.markets.find(m => m.market === market);
+                                return sum + (marketData?.volume || 0);
+                              }, 0);
+                            }),
+                            type: 'pie',
+                            marker: { colors: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'] },
+                          },
+                        ]}
+                        layout={{
+                          title: { text: 'Market Distribution' },
+                          height: 300,
+                        }}
+                        config={{ responsive: true }}
+                        style={{ width: '100%', height: '100%' }}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Summary Tables */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Top Opportunities Table */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top Opportunities</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Player</TableHead>
+                          <TableHead>Score</TableHead>
+                          <TableHead>Volume</TableHead>
+                          <TableHead>Trend</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredPlayers
+                          .sort((a, b) => b.opportunity_score - a.opportunity_score)
+                          .slice(0, 5)
+                          .map((player) => (
+                            <TableRow key={player.id}>
+                              <TableCell className="font-medium">{player.name}</TableCell>
+                              <TableCell>
+                                <Badge variant={player.opportunity_score >= 75 ? "default" : "secondary"}>
+                                  {player.opportunity_score}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>{player.total_volume.toLocaleString()}</TableCell>
+                              <TableCell>
+                                <span className={player.trend_percent >= 0 ? "text-green-600" : "text-red-600"}>
+                                  {player.trend_percent.toFixed(1)}%
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+
+                {/* Market Performance Table */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Market Performance</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Market</TableHead>
+                          <TableHead>Players</TableHead>
+                          <TableHead>Total Volume</TableHead>
+                          <TableHead>Avg Volume</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {Array.from(new Set(filteredPlayers.flatMap(p => p.markets.map(m => m.market)))).map((market) => {
+                          const marketPlayers = filteredPlayers.filter(p => p.markets.some(m => m.market === market));
+                          const totalVolume = marketPlayers.reduce((sum, p) => {
+                            const marketData = p.markets.find(m => m.market === market);
+                            return sum + (marketData?.volume || 0);
+                          }, 0);
+                          const avgVolume = totalVolume / marketPlayers.length;
+                          
+                          return (
+                            <TableRow key={market}>
+                              <TableCell className="font-medium">{market}</TableCell>
+                              <TableCell>{marketPlayers.length}</TableCell>
+                              <TableCell>{totalVolume.toLocaleString()}</TableCell>
+                              <TableCell>{Math.round(avgVolume).toLocaleString()}</TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Individual Search Tab */}
+            <TabsContent value="individual" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Search className="h-5 w-5" />
+                    Individual Player Search
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <Input
+                          placeholder="Search by player name, team, position, or nationality..."
+                          value={individualSearchQuery}
+                          onChange={(e) => setIndividualSearchQuery(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleIndividualSearch()}
+                        />
+                      </div>
+                      <Button onClick={handleIndividualSearch}>
+                        <Search className="h-4 w-4 mr-2" />
+                        Search
+                      </Button>
+                    </div>
+                    
+                    {individualSearchResults.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {individualSearchResults.map((player) => (
+                          <Card key={player.id} className="p-4">
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between">
+                                <h3 className="font-bold text-lg">{player.name}</h3>
+                                <Badge variant={player.opportunity_score >= 75 ? "default" : "secondary"}>
+                                  {player.opportunity_score}
+                                </Badge>
+                              </div>
+                              <div className="space-y-2 text-sm">
+                                <div><strong>Team:</strong> {player.current_team}</div>
+                                <div><strong>Position:</strong> {player.position}</div>
+                                <div><strong>Nationality:</strong> {player.nationality}</div>
+                                <div><strong>Age:</strong> {player.age}</div>
+                                <div><strong>Total Volume:</strong> {player.total_volume.toLocaleString()}</div>
+                                <div><strong>Markets:</strong> {player.market_count}</div>
+                                <div className="flex items-center">
+                                  <strong>Trend:</strong>
+                                  <div className="flex items-center ml-2">
+                                    {player.trend_percent >= 0 ? (
+                                      <TrendingUp className="h-4 w-4 text-green-600 mr-1" />
+                                    ) : (
+                                      <TrendingDown className="h-4 w-4 text-red-600 mr-1" />
+                                    )}
+                                    <span className={player.trend_percent >= 0 ? "text-green-600" : "text-red-600"}>
+                                      {player.trend_percent.toFixed(1)}%
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="pt-2">
+                                <h4 className="font-medium mb-2">Market Breakdown:</h4>
+                                <div className="space-y-1">
+                                  {player.markets.slice(0, 3).map((market, idx) => (
+                                    <div key={idx} className="flex justify-between text-sm">
+                                      <span>{market.market}:</span>
+                                      <span>{market.volume.toLocaleString()}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {individualSearchQuery && individualSearchResults.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        No players found matching &quot;{individualSearchQuery}&quot;
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Players Tab */}
@@ -531,6 +809,233 @@ export default function EnhancedDashboard() {
                       ))}
                     </TableBody>
                   </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Player Comparison Tab */}
+            <TabsContent value="comparison" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ArrowUpDown className="h-5 w-5" />
+                    Player Comparison (Select up to 4 players)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {/* Player Selection */}
+                    <div>
+                      <h3 className="font-medium mb-4">Select Players to Compare:</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-64 overflow-y-auto">
+                        {filteredPlayers.slice(0, 20).map((player) => (
+                          <div key={player.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`compare-${player.id}`}
+                              checked={selectedPlayersForComparison.includes(player.id.toString())}
+                              onCheckedChange={() => togglePlayerForComparison(player.id.toString())}
+                              disabled={!selectedPlayersForComparison.includes(player.id.toString()) && selectedPlayersForComparison.length >= 4}
+                            />
+                            <label htmlFor={`compare-${player.id}`} className="text-sm font-medium">
+                              {player.name} ({player.current_team})
+                            </label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Comparison Results */}
+                    {selectedPlayersForComparison.length > 0 && (
+                      <div>
+                        <h3 className="font-medium mb-4">Comparison Results:</h3>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Metric</TableHead>
+                                {getComparisonPlayers().map((player) => (
+                                  <TableHead key={player.id}>{player.name}</TableHead>
+                                ))}
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              <TableRow>
+                                <TableCell className="font-medium">Total Volume</TableCell>
+                                {getComparisonPlayers().map((player) => (
+                                  <TableCell key={player.id}>{player.total_volume.toLocaleString()}</TableCell>
+                                ))}
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="font-medium">Opportunity Score</TableCell>
+                                {getComparisonPlayers().map((player) => (
+                                  <TableCell key={player.id}>
+                                    <Badge variant={player.opportunity_score >= 75 ? "default" : "secondary"}>
+                                      {player.opportunity_score}
+                                    </Badge>
+                                  </TableCell>
+                                ))}
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="font-medium">Market Count</TableCell>
+                                {getComparisonPlayers().map((player) => (
+                                  <TableCell key={player.id}>{player.market_count}</TableCell>
+                                ))}
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="font-medium">Trend %</TableCell>
+                                {getComparisonPlayers().map((player) => (
+                                  <TableCell key={player.id}>
+                                    <span className={player.trend_percent >= 0 ? "text-green-600" : "text-red-600"}>
+                                      {player.trend_percent.toFixed(1)}%
+                                    </span>
+                                  </TableCell>
+                                ))}
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="font-medium">Team</TableCell>
+                                {getComparisonPlayers().map((player) => (
+                                  <TableCell key={player.id}>{player.current_team}</TableCell>
+                                ))}
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="font-medium">Position</TableCell>
+                                {getComparisonPlayers().map((player) => (
+                                  <TableCell key={player.id}>{player.position}</TableCell>
+                                ))}
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+
+                        {/* Comparison Chart */}
+                        {getComparisonPlayers().length > 0 && (
+                          <div className="mt-6">
+                            <h4 className="font-medium mb-4">Visual Comparison</h4>
+                            <div className="h-80">
+                              <Plot
+                                data={[
+                                  {
+                                    x: getComparisonPlayers().map(p => p.name),
+                                    y: getComparisonPlayers().map(p => p.total_volume),
+                                    type: 'bar',
+                                    name: 'Total Volume',
+                                    marker: { color: '#3B82F6' },
+                                  },
+                                ]}
+                                layout={{
+                                  title: { text: 'Total Volume Comparison' },
+                                  xaxis: { title: { text: 'Players' } },
+                                  yaxis: { title: { text: 'Volume' } },
+                                  height: 300,
+                                }}
+                                config={{ responsive: true }}
+                                style={{ width: '100%', height: '100%' }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Opportunities Tab */}
+            <TabsContent value="opportunities" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="h-5 w-5" />
+                    Opportunity Score Rankings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Top Opportunities */}
+                    <div>
+                      <h3 className="font-medium mb-4">Top Opportunities (Score ≥ 75)</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {filteredPlayers
+                          .filter(p => p.opportunity_score >= 75)
+                          .sort((a, b) => b.opportunity_score - a.opportunity_score)
+                          .map((player) => (
+                            <Card key={player.id} className="p-4 border-green-200 bg-green-50">
+                              <div className="flex items-center justify-between mb-2">
+                                <h4 className="font-bold">{player.name}</h4>
+                                <Badge className="bg-green-600">
+                                  <Award className="h-3 w-3 mr-1" />
+                                  {player.opportunity_score}
+                                </Badge>
+                              </div>
+                              <div className="space-y-1 text-sm">
+                                <div>Volume: {player.total_volume.toLocaleString()}</div>
+                                <div>Markets: {player.market_count}</div>
+                                <div>Team: {player.current_team}</div>
+                                <div className="flex items-center">
+                                  Trend: 
+                                  {player.trend_percent >= 0 ? (
+                                    <TrendingUp className="h-3 w-3 text-green-600 ml-1 mr-1" />
+                                  ) : (
+                                    <TrendingDown className="h-3 w-3 text-red-600 ml-1 mr-1" />
+                                  )}
+                                  <span className={player.trend_percent >= 0 ? "text-green-600" : "text-red-600"}>
+                                    {player.trend_percent.toFixed(1)}%
+                                  </span>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Medium Opportunities */}
+                    <div>
+                      <h3 className="font-medium mb-4">Medium Opportunities (Score 50-74)</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {filteredPlayers
+                          .filter(p => p.opportunity_score >= 50 && p.opportunity_score < 75)
+                          .sort((a, b) => b.opportunity_score - a.opportunity_score)
+                          .slice(0, 12)
+                          .map((player) => (
+                            <Card key={player.id} className="p-3 border-yellow-200 bg-yellow-50">
+                              <div className="flex items-center justify-between mb-1">
+                                <h4 className="font-medium text-sm">{player.name}</h4>
+                                <Badge variant="secondary">{player.opportunity_score}</Badge>
+                              </div>
+                              <div className="space-y-1 text-xs">
+                                <div>Vol: {player.total_volume.toLocaleString()}</div>
+                                <div>Markets: {player.market_count}</div>
+                              </div>
+                            </Card>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Opportunity Score Distribution Chart */}
+                    <div>
+                      <h3 className="font-medium mb-4">Opportunity Score Distribution</h3>
+                      <div className="h-64">
+                        <Plot
+                          data={[
+                            {
+                              x: filteredPlayers.map(p => p.opportunity_score),
+                              type: 'histogram',
+                              marker: { color: '#8B5CF6' },
+                            },
+                          ]}
+                          layout={{
+                            title: { text: 'Distribution of Opportunity Scores' },
+                            xaxis: { title: { text: 'Opportunity Score' } },
+                            yaxis: { title: { text: 'Number of Players' } },
+                            height: 250,
+                          }}
+                          config={{ responsive: true }}
+                          style={{ width: '100%', height: '100%' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
